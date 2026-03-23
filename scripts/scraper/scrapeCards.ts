@@ -13,9 +13,11 @@
  * Run:  npx ts-node scripts/scraper/scrapeCards.ts
  */
 
+import 'dotenv/config';
 import axios from 'axios';
 import * as fs from 'fs';
 import * as path from 'path';
+import { GoogleGenerativeAI } from '@google/generative-ai';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -257,18 +259,42 @@ function hasChanges(diff: ChangeReport['diff']): boolean {
 
 async function sendWebhook(report: ChangeReport): Promise<void> {
   if (!WEBHOOK_URL) return;
+  
+  let summary = `\n\`\`\`json\n${JSON.stringify(report.diff, null, 2)}\n\`\`\``;
+  
+  if (process.env.GEMINI_API_KEY) {
+    try {
+      const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+      const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+      
+      const prompt = `You are a credit card analyst. You will receive a JSON diff of text additions/removals scraped from a bank's credit card page. The diff contains arrays of 'added' and 'removed' strings corresponding to rewards, fees, and perks. Summarize exactly what changed in 1-3 simple, plain English sentences. Do not use markdown code blocks or raw JSON in your output. Just say things like 'The card removed the 100% welcome benefit' or 'A new 1% forex markup fee was added.'
+      
+Card: ${report.card}
+Diff: ${JSON.stringify(report.diff)}`;
+
+      const result = await model.generateContent(prompt);
+      const responseText = result.response.text();
+      
+      if (responseText) {
+        summary = responseText.trim();
+      }
+    } catch (err) {
+      console.warn('  [webhook] Failed to hit Gemini API for summary, falling back to JSON.');
+    }
+  }
+
   try {
     await axios.post(
       WEBHOOK_URL,
       {
-        content: `🚨 **Card Change Detected!**\n**Card:** ${report.card}\n**Timestamp:** ${report.timestamp}\n\n**Diff:**\n\`\`\`json\n${JSON.stringify(report.diff, null, 2)}\n\`\`\``
+        content: `🚨 **Card Update Detected!**\n**Card:** ${report.card}\n\n**Summary:**\n${summary}`
       },
       { timeout: 10_000, headers: { 'Content-Type': 'application/json' } }
     );
     console.log(`  [webhook] Payload sent to ${WEBHOOK_URL}`);
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);
-    console.warn(`  [webhook] Failed to send — ${msg}`);
+    console.warn(`  [webhook] Failed to send webhook — ${msg}`);
   }
 }
 

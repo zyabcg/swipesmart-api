@@ -26,6 +26,7 @@ jobs:
       - name: Run Scraper
         env:
           ADMIN_WEBHOOK_URL: ${{ secrets.ADMIN_WEBHOOK_URL }}
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
         run: npm run scrape:cards
         
       - name: Commit snapshot data
