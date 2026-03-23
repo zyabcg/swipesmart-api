@@ -1,0 +1,2 @@
+# Ignore example snapshots — real snapshots (slug.json) ARE committed intentionally
+*.example.json

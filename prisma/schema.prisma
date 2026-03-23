@@ -1,0 +1,295 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ─── Sessions ─────────────────────────────────────────────────────────────────
+// Anonymous session tracking — no login required. Every browser gets a session.
+
+model Session {
+  id        String  @id @default(cuid())
+  sessionId String  @unique
+  userId    String?
+  user      User?   @relation(fields: [userId], references: [id])
+
+  ipAddress String?
+  userAgent String?
+  metadata  Json?
+
+  // Alert preferences — both must be true for alerts to be generated/shown
+  alertsEnabled Boolean @default(false)
+  isPremium     Boolean @default(false)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  optimizations   OptimizationRequest[]
+  recommendations RecommendationRequest[]
+  conversations   ChatConversation[]
+  events          AnalyticsEvent[]
+  clicks          AffiliateClick[]
+  alerts          CardAlert[]
+
+  @@index([sessionId])
+  @@index([userId])
+}
+
+// ─── Users ────────────────────────────────────────────────────────────────────
+// Optional registered users (email-based, no password required initially).
+
+model User {
+  id    String  @id @default(cuid())
+  email String  @unique
+  name  String?
+
+  income          Float?
+  spendingProfile SpendingProfile?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  sessions Session[]
+  clicks   AffiliateClick[]
+}
+
+model SpendingProfile {
+  id     String @id @default(cuid())
+  userId String @unique
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  groceries Float @default(0)
+  dining    Float @default(0)
+  travel    Float @default(0)
+  online    Float @default(0)
+  fuel      Float @default(0)
+  utility   Float @default(0)
+
+  updatedAt DateTime @updatedAt
+}
+
+// ─── Cards ────────────────────────────────────────────────────────────────────
+// The core product catalog. Reward rates are stored as effective % value-back
+// after point redemption conversions (not raw points per rupee).
+
+model Card {
+  id      String @id @default(cuid())
+  slug    String @unique // e.g. 'hdfc_regalia' — stable external identifier
+  name    String
+  bank    String
+  network String // Visa | Mastercard | Amex | Diners | Rupay
+
+  annualFee     Float
+  feeWaiverRule String?
+  minIncome     Float   @default(0)
+
+  // JSON: { travel: 5, dining: 2.7, online: 2.7, groceries: 2.7, fuel: 0, utility: 2.7, default: 2.7 }
+  rewardRates Json
+
+  perks      String[] // human-readable perk strings
+  bestFor    String[] // 'travel_perks' | 'cashback' | 'rewards_points' | 'low_fee'
+  categories String[] // primary categories this card excels at
+
+  intlTravel   Boolean @default(false)
+  welcomeBonus Float   @default(0)
+  isActive     Boolean @default(true)
+  isInviteOnly Boolean @default(false)
+
+  imageUrl String? // card artwork CDN URL
+  applyUrl String? // base affiliate/apply URL
+
+  // Change tracking — incremented by admin on every reward/fee update
+  version Int @default(1)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  affiliateLinks AffiliateLink[]
+  alerts         CardAlert[]
+
+  @@index([bank])
+  @@index([isActive])
+  @@index([annualFee])
+}
+
+// ─── Optimizer Requests ───────────────────────────────────────────────────────
+
+model OptimizationRequest {
+  id        String  @id @default(cuid())
+  sessionId String
+  session   Session @relation(fields: [sessionId], references: [id])
+
+  selectedCards String[] // card slugs
+  monthlySpend  Json     // { groceries: 5000, dining: 3000, ... }
+  result        Json     // full optimization result payload
+
+  createdAt DateTime @default(now())
+
+  @@index([sessionId])
+  @@index([createdAt])
+}
+
+// ─── Recommendation Requests ──────────────────────────────────────────────────
+
+model RecommendationRequest {
+  id        String  @id @default(cuid())
+  sessionId String
+  session   Session @relation(fields: [sessionId], references: [id])
+
+  income              Float
+  totalSpend          Float
+  primaryCategory     String
+  lifestylePreference String
+  maxFee              Float
+  intlTravel          String
+
+  result    Json
+  createdAt DateTime @default(now())
+
+  @@index([sessionId])
+  @@index([createdAt])
+}
+
+// ─── Chat ─────────────────────────────────────────────────────────────────────
+
+model ChatConversation {
+  id        String  @id @default(cuid())
+  sessionId String
+  session   Session @relation(fields: [sessionId], references: [id])
+
+  messages ChatMessage[]
+  context  Json? // accumulated user profile data (income, spend, etc.)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([sessionId])
+}
+
+model ChatMessage {
+  id             String           @id @default(cuid())
+  conversationId String
+  conversation   ChatConversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+
+  role    String // 'user' | 'assistant'
+  content String
+
+  createdAt DateTime @default(now())
+
+  @@index([conversationId])
+}
+
+// ─── Analytics ────────────────────────────────────────────────────────────────
+
+model AnalyticsEvent {
+  id        String   @id @default(cuid())
+  sessionId String?
+  session   Session? @relation(fields: [sessionId], references: [id])
+
+  event      String // 'page_view' | 'button_click' | 'optimize' | 'recommend' | 'card_view' | 'affiliate_click'
+  page       String?
+  properties Json?
+
+  ipAddress String?
+  userAgent String?
+  createdAt DateTime @default(now())
+
+  @@index([event])
+  @@index([createdAt])
+  @@index([sessionId])
+}
+
+// ─── Affiliate ────────────────────────────────────────────────────────────────
+
+model AffiliateLink {
+  id     String  @id @default(cuid())
+  cardId String
+  card   Card    @relation(fields: [cardId], references: [id])
+
+  url         String
+  utmSource   String?
+  utmMedium   String?
+  utmCampaign String?
+  isActive    Boolean @default(true)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  clicks      AffiliateClick[]
+  conversions AffiliateConversion[]
+
+  @@index([cardId])
+}
+
+model AffiliateClick {
+  id              String        @id @default(cuid())
+  affiliateLinkId String
+  affiliateLink   AffiliateLink @relation(fields: [affiliateLinkId], references: [id])
+
+  sessionId String
+  session   Session @relation(fields: [sessionId], references: [id])
+
+  userId String?
+  user   User?   @relation(fields: [userId], references: [id])
+
+  ipAddress String?
+  userAgent String?
+  referrer  String?
+  createdAt DateTime @default(now())
+
+  @@index([affiliateLinkId])
+  @@index([sessionId])
+  @@index([createdAt])
+}
+
+model AffiliateConversion {
+  id              String        @id @default(cuid())
+  affiliateLinkId String
+  affiliateLink   AffiliateLink @relation(fields: [affiliateLinkId], references: [id])
+
+  clickId String? // reference to the originating click
+  value   Float?  // commission value in INR
+  status  String  @default("pending") // pending | confirmed | rejected
+
+  metadata Json?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([affiliateLinkId])
+  @@index([status])
+}
+
+// ─── Card Devaluation Alerts ──────────────────────────────────────────────────
+// Generated when admin updates a card's reward rates or fees.
+// One alert per affected session per card update.
+
+model CardAlert {
+  id        String  @id @default(cuid())
+  sessionId String
+  session   Session @relation(fields: [sessionId], references: [id])
+
+  cardId   String
+  card     Card   @relation(fields: [cardId], references: [id])
+  cardSlug String
+  cardName String
+
+  // Human-readable summary of what changed (e.g. "Online cashback reduced from 5% to 3%")
+  change  String
+  // Annual reward delta in ₹ — negative means user loses money
+  impact  Int
+  // User-facing message
+  message String
+
+  isRead Boolean @default(false)
+
+  createdAt DateTime @default(now())
+
+  @@index([sessionId])
+  @@index([cardSlug])
+  @@index([isRead])
+  @@index([createdAt])
+}

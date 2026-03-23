@@ -1,0 +1,1868 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SwipeSmart — Credit Card Intelligence</title>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Geist:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #080c10;
+  --bg2: #0d1117;
+  --surface: rgba(255,255,255,0.04);
+  --surface2: rgba(255,255,255,0.07);
+  --border: rgba(255,255,255,0.08);
+  --border-hover: rgba(99,179,237,0.3);
+  --white: #f0f4f8;
+  --muted: #6b7a8d;
+  --muted2: #8fa0b4;
+  --teal: #63b3ed;
+  --teal-dim: rgba(99,179,237,0.15);
+  --teal-glow: rgba(99,179,237,0.08);
+  --green: #68d391;
+  --amber: #f6ad55;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{
+  background:var(--bg);
+  color:var(--white);
+  font-family:'Geist',sans-serif;
+  font-size:14px;
+  line-height:1.6;
+  min-height:100vh;
+  overflow-x:hidden;
+}
+
+/* Grid texture */
+body::before{
+  content:'';
+  position:fixed;inset:0;
+  background-image:
+    linear-gradient(rgba(99,179,237,0.03) 1px,transparent 1px),
+    linear-gradient(90deg,rgba(99,179,237,0.03) 1px,transparent 1px);
+  background-size:48px 48px;
+  pointer-events:none;z-index:0;
+}
+
+/* Radial glow - top left like reference */
+body::after{
+  content:'';
+  position:fixed;
+  top:-200px;left:-200px;
+  width:700px;height:700px;
+  background:radial-gradient(circle,rgba(56,139,253,0.12) 0%,rgba(99,179,237,0.06) 40%,transparent 70%);
+  pointer-events:none;z-index:0;
+  animation:glowPulse 8s ease-in-out infinite;
+}
+@keyframes glowPulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:0.7;transform:scale(1.1)}}
+
+/* ── NAV ── */
+nav{
+  position:fixed;top:0;left:0;right:0;z-index:100;
+  padding:0 48px;height:60px;
+  display:flex;align-items:center;justify-content:space-between;
+  background:rgba(8,12,16,0.8);
+  backdrop-filter:blur(20px);
+  border-bottom:1px solid var(--border);
+}
+.logo{
+  font-family:'Instrument Serif',serif;
+  font-size:19px;letter-spacing:-0.3px;
+  color:var(--white);
+}
+.logo span{color:var(--teal);font-style:italic;}
+.nav-links{display:flex;gap:2px;align-items:center;}
+.nav-link{
+  padding:6px 16px;border-radius:6px;
+  background:transparent;border:none;
+  color:var(--muted);font-family:'Geist',sans-serif;
+  font-size:13px;font-weight:400;cursor:pointer;
+  transition:all 0.15s;
+}
+.nav-link:hover{color:var(--white);background:var(--surface);}
+.nav-link.active{color:var(--white);background:var(--surface2);}
+.nav-cta{
+  padding:7px 18px;
+  background:var(--teal);
+  color:#080c10;
+  border:none;border-radius:7px;
+  font-family:'Geist',sans-serif;font-size:13px;font-weight:600;
+  cursor:pointer;transition:all 0.15s;
+  display:flex;align-items:center;gap:6px;
+}
+.nav-cta:hover{background:#90cdf4;transform:translateY(-1px);}
+.beta-pill{
+  padding:3px 10px;border-radius:99px;
+  background:rgba(99,179,237,0.1);
+  border:1px solid rgba(99,179,237,0.2);
+  color:var(--teal);font-size:11px;font-weight:500;
+  letter-spacing:0.5px;
+}
+
+/* ── PAGES ── */
+.page{display:none;padding-top:60px;min-height:100vh;position:relative;z-index:1;}
+.page.active{display:block;}
+
+/* ── HERO ── */
+.hero{
+  max-width:900px;margin:0 auto;
+  padding:100px 48px 80px;
+  text-align:center;
+}
+.hero-badge{
+  display:inline-flex;align-items:center;gap:8px;
+  padding:6px 16px;border-radius:99px;
+  background:rgba(99,179,237,0.08);
+  border:1px solid rgba(99,179,237,0.2);
+  font-size:12px;color:var(--teal);
+  margin-bottom:36px;letter-spacing:0.3px;
+}
+.hero-badge-dot{
+  width:6px;height:6px;border-radius:50%;
+  background:var(--teal);
+  animation:blink 2s ease-in-out infinite;
+}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:0.3}}
+
+h1{
+  font-family:'Instrument Serif',serif;
+  font-size:clamp(44px,6.5vw,80px);
+  font-weight:400;line-height:1.05;
+  letter-spacing:-2px;
+  margin-bottom:24px;
+  color:var(--white);
+}
+h1 em{
+  font-style:italic;color:var(--teal);
+  background:linear-gradient(135deg,#63b3ed,#90cdf4);
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;
+}
+.hero-sub{
+  font-size:16px;color:var(--muted2);
+  max-width:520px;margin:0 auto 48px;
+  line-height:1.75;font-weight:300;
+}
+.hero-ctas{display:flex;gap:12px;justify-content:center;flex-wrap:wrap;margin-bottom:64px;}
+.btn-primary{
+  padding:13px 28px;
+  background:var(--teal);color:#080c10;
+  border:none;border-radius:8px;
+  font-family:'Geist',sans-serif;font-size:14px;font-weight:600;
+  cursor:pointer;transition:all 0.2s;
+  display:flex;align-items:center;gap:8px;
+}
+.btn-primary:hover{background:#90cdf4;transform:translateY(-2px);box-shadow:0 8px 30px rgba(99,179,237,0.25);}
+.btn-ghost{
+  padding:13px 28px;background:var(--surface);
+  color:var(--white);border:1px solid var(--border);
+  border-radius:8px;font-family:'Geist',sans-serif;
+  font-size:14px;font-weight:500;cursor:pointer;transition:all 0.2s;
+}
+.btn-ghost:hover{border-color:var(--border-hover);background:var(--surface2);}
+
+/* Social proof row */
+.social-proof{
+  display:flex;align-items:center;justify-content:center;gap:12px;
+  margin-bottom:80px;
+}
+.avatars{display:flex;}
+.avatar{
+  width:32px;height:32px;border-radius:50%;
+  border:2px solid var(--bg);
+  background:linear-gradient(135deg,#2d3748,#4a5568);
+  margin-left:-8px;font-size:13px;
+  display:flex;align-items:center;justify-content:center;
+  color:var(--white);font-weight:600;
+}
+.avatar:first-child{margin-left:0;}
+.social-text{font-size:13px;color:var(--muted2);}
+.social-text strong{color:var(--white);}
+
+/* Stats bar */
+.stats-bar{
+  display:flex;justify-content:center;
+  gap:0;flex-wrap:wrap;
+  border:1px solid var(--border);
+  border-radius:14px;
+  background:var(--surface);
+  backdrop-filter:blur(10px);
+  overflow:hidden;
+  max-width:700px;margin:0 auto;
+}
+.stat-item{
+  flex:1;min-width:160px;
+  padding:24px 28px;
+  border-right:1px solid var(--border);
+  text-align:center;
+  transition:background 0.2s;
+}
+.stat-item:last-child{border-right:none;}
+.stat-item:hover{background:var(--surface2);}
+.stat-num{
+  font-family:'Instrument Serif',serif;
+  font-size:30px;color:var(--teal);
+  line-height:1;margin-bottom:4px;
+}
+.stat-label{font-size:11px;color:var(--muted);letter-spacing:0.3px;}
+
+/* Cards ticker */
+.ticker-section{
+  padding:40px 0;overflow:hidden;
+  border-top:1px solid var(--border);
+  border-bottom:1px solid var(--border);
+  margin-top:80px;
+}
+.ticker-label{text-align:center;font-size:11px;letter-spacing:2px;text-transform:uppercase;color:var(--muted);margin-bottom:24px;}
+.ticker-track{display:flex;gap:24px;animation:ticker 30s linear infinite;width:max-content;}
+.ticker-track:hover{animation-play-state:paused;}
+@keyframes ticker{from{transform:translateX(0)}to{transform:translateX(-50%)}}
+.ticker-card{
+  padding:8px 18px;border-radius:7px;
+  border:1px solid var(--border);
+  background:var(--surface);
+  font-size:12px;color:var(--muted2);white-space:nowrap;
+  transition:all 0.2s;cursor:default;
+}
+.ticker-card:hover{border-color:var(--border-hover);color:var(--white);background:var(--surface2);}
+
+/* ── HOW IT WORKS ── */
+.how-section{
+  max-width:900px;margin:0 auto;
+  padding:80px 48px;
+}
+.section-eyebrow{
+  font-size:11px;letter-spacing:2px;text-transform:uppercase;
+  color:var(--teal);margin-bottom:16px;
+}
+.section-title{
+  font-family:'Instrument Serif',serif;
+  font-size:clamp(28px,3.5vw,42px);
+  font-weight:400;letter-spacing:-1px;
+  color:var(--white);margin-bottom:48px;
+  line-height:1.15;
+}
+.steps-grid{display:grid;grid-template-columns:1fr 1fr;gap:20px;}
+.step-card{
+  padding:28px;border-radius:12px;
+  border:1px solid var(--border);
+  background:var(--surface);
+  transition:all 0.25s;position:relative;overflow:hidden;
+}
+.step-card::before{
+  content:'';position:absolute;inset:0;
+  background:radial-gradient(circle at 20% 20%,rgba(99,179,237,0.05),transparent 60%);
+  opacity:0;transition:opacity 0.3s;
+}
+.step-card:hover{border-color:var(--border-hover);transform:translateY(-2px);}
+.step-card:hover::before{opacity:1;}
+.step-num{
+  font-family:'Instrument Serif',serif;
+  font-size:40px;color:rgba(99,179,237,0.2);
+  line-height:1;margin-bottom:12px;
+}
+.step-title{font-size:15px;font-weight:600;color:var(--white);margin-bottom:8px;}
+.step-desc{font-size:13px;color:var(--muted2);line-height:1.65;}
+
+/* ── PAGE CONTENT ── */
+.page-inner{max-width:960px;margin:0 auto;padding:60px 48px 80px;}
+.page-header{margin-bottom:40px;}
+.page-eyebrow{font-size:11px;letter-spacing:2px;text-transform:uppercase;color:var(--teal);margin-bottom:10px;}
+.page-title{
+  font-family:'Instrument Serif',serif;
+  font-size:clamp(26px,3vw,36px);font-weight:400;
+  letter-spacing:-0.8px;color:var(--white);margin-bottom:8px;
+}
+.page-sub{font-size:14px;color:var(--muted2);max-width:560px;line-height:1.65;}
+
+/* ── INNER TABS ── */
+.inner-tabs{display:flex;gap:4px;margin-bottom:32px;border-bottom:1px solid var(--border);padding-bottom:16px;}
+.inner-tab{
+  padding:7px 18px;border-radius:6px;border:1px solid transparent;
+  background:transparent;color:var(--muted);
+  font-family:'Geist',sans-serif;font-size:13px;font-weight:400;
+  cursor:pointer;transition:all 0.15s;
+}
+.inner-tab:hover{color:var(--white);}
+.inner-tab.active{background:var(--surface2);border-color:var(--border);color:var(--white);}
+.inner-page{display:none;}
+.inner-page.active{display:block;}
+
+/* ── FORM ELEMENTS ── */
+.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;}
+.form-group{display:flex;flex-direction:column;gap:6px;}
+.form-group.full{grid-column:1/-1;}
+label{font-size:11px;font-weight:500;letter-spacing:0.8px;text-transform:uppercase;color:var(--muted);}
+input,select{
+  background:var(--surface);
+  border:1px solid var(--border);
+  border-radius:8px;padding:10px 14px;
+  color:var(--white);font-family:'Geist',sans-serif;
+  font-size:13px;outline:none;
+  transition:border-color 0.15s,background 0.15s;width:100%;
+}
+input:focus,select:focus{border-color:rgba(99,179,237,0.5);background:var(--surface2);}
+select option{background:#0d1117;}
+.prefix-input{position:relative;}
+.prefix-input::before{
+  content:'₹';position:absolute;left:13px;top:50%;
+  transform:translateY(-50%);color:var(--teal);font-size:13px;pointer-events:none;
+}
+.prefix-input input{padding-left:28px;}
+
+/* ── CARD SEARCH ── */
+.search-wrapper{position:relative;max-width:400px;margin-bottom:12px;}
+.search-wrapper input{padding-left:38px;}
+.search-icon{
+  position:absolute;left:13px;top:50%;transform:translateY(-50%);
+  color:var(--muted);font-size:14px;pointer-events:none;
+}
+.search-count{
+  position:absolute;right:12px;top:50%;transform:translateY(-50%);
+  font-size:11px;color:var(--muted);pointer-events:none;
+}
+
+/* ── CARD CHIPS ── */
+.chips-container{
+  display:flex;flex-wrap:wrap;gap:8px;
+  max-height:240px;overflow-y:auto;
+  padding:4px 2px;
+  scrollbar-width:thin;
+  scrollbar-color:var(--border) transparent;
+}
+.chips-container::-webkit-scrollbar{width:4px;}
+.chips-container::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px;}
+.chip{
+  padding:6px 14px;border-radius:6px;
+  border:1px solid var(--border);
+  background:var(--surface);
+  color:var(--muted2);font-size:12px;font-weight:400;
+  cursor:pointer;transition:all 0.15s;user-select:none;
+}
+.chip:hover{border-color:rgba(99,179,237,0.3);color:var(--white);}
+.chip.selected{
+  background:rgba(99,179,237,0.12);
+  border-color:rgba(99,179,237,0.4);
+  color:var(--teal);
+}
+.selected-summary{
+  font-size:12px;color:var(--teal);margin:8px 0;min-height:18px;
+  display:flex;align-items:center;gap:6px;flex-wrap:wrap;
+}
+.selected-tag{
+  padding:2px 10px;border-radius:99px;
+  background:rgba(99,179,237,0.1);
+  border:1px solid rgba(99,179,237,0.2);
+  font-size:11px;color:var(--teal);
+  display:flex;align-items:center;gap:4px;cursor:pointer;
+}
+.selected-tag:hover{background:rgba(99,179,237,0.2);}
+#noResults{font-size:12px;color:var(--muted);margin-top:6px;display:none;}
+
+/* ── SPEND GRID ── */
+.spend-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-top:4px;}
+.spend-item{
+  background:var(--surface);border:1px solid var(--border);
+  border-radius:10px;padding:14px;
+  transition:border-color 0.15s;
+}
+.spend-item:focus-within{border-color:rgba(99,179,237,0.3);}
+.spend-label{
+  font-size:11px;letter-spacing:0.5px;text-transform:uppercase;
+  color:var(--muted);margin-bottom:8px;
+  display:flex;align-items:center;gap:5px;
+}
+
+/* ── SUBMIT ROW ── */
+.submit-row{display:flex;align-items:center;gap:16px;margin-top:24px;flex-wrap:wrap;}
+.disclaimer{font-size:11px;color:rgba(255,255,255,0.2);max-width:380px;line-height:1.5;}
+
+/* ── DIVIDER ── */
+hr{border:none;border-top:1px solid var(--border);margin:28px 0;}
+
+/* ── LOADING ── */
+.loading{display:none;align-items:center;gap:10px;color:var(--muted);font-size:13px;margin-top:20px;}
+.loading.show{display:flex;}
+.spinner{
+  width:16px;height:16px;
+  border:2px solid var(--border);
+  border-top-color:var(--teal);
+  border-radius:50%;
+  animation:spin 0.7s linear infinite;
+}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* ── RESULTS ── */
+.results-box{margin-top:40px;}
+.results-heading{
+  font-family:'Instrument Serif',serif;
+  font-size:22px;font-weight:400;letter-spacing:-0.3px;
+  margin-bottom:6px;
+}
+.results-sub-text{font-size:13px;color:var(--muted);margin-bottom:24px;}
+
+.savings-card{
+  background:linear-gradient(135deg,rgba(99,179,237,0.08),rgba(99,179,237,0.03));
+  border:1px solid rgba(99,179,237,0.2);
+  border-radius:12px;padding:22px 26px;
+  display:flex;align-items:center;justify-content:space-between;
+  margin-bottom:24px;gap:16px;
+}
+.savings-label{font-size:12px;color:var(--muted2);margin-bottom:2px;}
+.savings-amount{
+  font-family:'Instrument Serif',serif;
+  font-size:38px;letter-spacing:-1px;color:var(--teal);
+  line-height:1;
+}
+.savings-note{font-size:11px;color:var(--muted);margin-top:3px;}
+
+.opt-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px;}
+.opt-item{
+  background:var(--surface);border:1px solid var(--border);
+  border-radius:10px;padding:16px;
+  transition:border-color 0.2s;
+}
+.opt-item:hover{border-color:var(--border-hover);}
+.opt-cat{font-size:10px;letter-spacing:1px;text-transform:uppercase;color:var(--muted);margin-bottom:6px;display:flex;align-items:center;gap:4px;}
+.opt-name{font-size:14px;font-weight:600;color:var(--white);margin-bottom:3px;}
+.opt-rate{font-size:12px;color:var(--teal);}
+.opt-diff{font-size:11px;color:var(--muted);margin-top:2px;}
+
+.tips-box{
+  background:var(--surface);border:1px solid var(--border);
+  border-radius:10px;padding:18px 20px;
+}
+.tips-title{font-size:12px;font-weight:600;color:var(--teal);margin-bottom:10px;letter-spacing:0.5px;}
+.tips-body{font-size:12px;color:var(--muted2);line-height:1.9;}
+
+/* ── RESULT CARDS (finder) ── */
+.result-card{
+  background:var(--surface);border:1px solid var(--border);
+  border-radius:12px;padding:22px;margin-bottom:12px;
+  transition:all 0.2s;position:relative;overflow:hidden;
+}
+.result-card::before{
+  content:'';position:absolute;top:0;left:0;right:0;height:1px;
+  background:linear-gradient(90deg,var(--teal),transparent);
+  opacity:0;transition:opacity 0.2s;
+}
+.result-card:hover{border-color:var(--border-hover);transform:translateY(-1px);}
+.result-card:hover::before{opacity:1;}
+.result-card.top-pick{
+  border-color:rgba(99,179,237,0.3);
+  background:linear-gradient(135deg,rgba(99,179,237,0.06),var(--surface));
+}
+.result-card.top-pick::before{opacity:1;}
+.top-badge{
+  position:absolute;top:14px;right:14px;
+  background:rgba(99,179,237,0.15);border:1px solid rgba(99,179,237,0.3);
+  color:var(--teal);font-size:10px;font-weight:600;
+  letter-spacing:0.8px;text-transform:uppercase;
+  padding:3px 10px;border-radius:4px;
+}
+.rc-head{display:flex;align-items:flex-start;gap:14px;margin-bottom:14px;}
+.rc-icon{
+  width:40px;height:40px;border-radius:9px;
+  background:var(--surface2);border:1px solid var(--border);
+  display:flex;align-items:center;justify-content:center;
+  font-size:17px;flex-shrink:0;
+}
+.rc-name{font-size:16px;font-weight:600;color:var(--white);line-height:1.2;}
+.rc-bank{font-size:11px;color:var(--muted);margin-top:2px;}
+.rc-value-row{
+  background:rgba(99,179,237,0.06);border:1px solid rgba(99,179,237,0.1);
+  border-radius:8px;padding:10px 14px;
+  display:flex;align-items:center;justify-content:space-between;
+  margin-bottom:12px;
+}
+.rc-value-label{font-size:11px;color:var(--muted);}
+.rc-value-sub{font-size:10px;color:var(--muted);margin-top:1px;}
+.rc-value-num{
+  font-family:'Instrument Serif',serif;
+  font-size:24px;letter-spacing:-0.5px;color:var(--teal);
+}
+.rc-tags{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px;}
+.rc-tag{
+  font-size:11px;padding:3px 9px;border-radius:4px;
+  background:var(--surface2);border:1px solid var(--border);
+  color:var(--muted2);
+}
+.rc-tag.hi{background:rgba(99,179,237,0.08);border-color:rgba(99,179,237,0.2);color:var(--teal);}
+.rc-fee{font-size:11px;color:var(--muted);}
+.rc-fee strong{color:var(--muted2);}
+
+/* ── CHAT ── */
+.chat-wrap{max-width:680px;}
+.chat-msgs{
+  min-height:380px;max-height:460px;overflow-y:auto;
+  padding:20px;background:var(--surface);
+  border:1px solid var(--border);border-radius:12px 12px 0 0;
+  display:flex;flex-direction:column;gap:14px;
+  scroll-behavior:smooth;
+}
+.chat-msgs::-webkit-scrollbar{width:3px;}
+.chat-msgs::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px;}
+.msg{display:flex;gap:10px;animation:msgIn 0.25s ease;}
+@keyframes msgIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+.msg.user{flex-direction:row-reverse;}
+.msg-av{
+  width:28px;height:28px;border-radius:7px;flex-shrink:0;
+  display:flex;align-items:center;justify-content:center;
+  font-size:10px;font-weight:700;
+}
+.msg.bot .msg-av{background:rgba(99,179,237,0.15);border:1px solid rgba(99,179,237,0.2);color:var(--teal);}
+.msg.user .msg-av{background:var(--surface2);color:var(--muted2);}
+.msg-bub{
+  max-width:72%;padding:10px 14px;font-size:13px;line-height:1.6;border-radius:10px;
+}
+.msg.bot .msg-bub{
+  background:var(--surface2);border:1px solid var(--border);color:var(--white);
+  border-radius:3px 10px 10px 10px;
+}
+.msg.user .msg-bub{
+  background:rgba(99,179,237,0.1);border:1px solid rgba(99,179,237,0.2);
+  color:var(--white);border-radius:10px 3px 10px 10px;
+}
+.msg-bub strong{color:var(--teal);}
+.chat-quick{
+  display:flex;flex-wrap:wrap;gap:6px;
+  padding:10px 20px;background:rgba(13,17,23,0.9);
+  border-left:1px solid var(--border);border-right:1px solid var(--border);
+  min-height:44px;
+}
+.qr-btn{
+  padding:5px 13px;border:1px solid var(--border);border-radius:99px;
+  font-size:12px;cursor:pointer;color:var(--muted2);
+  background:transparent;font-family:'Geist',sans-serif;transition:all 0.15s;
+}
+.qr-btn:hover{border-color:rgba(99,179,237,0.3);color:var(--teal);}
+.chat-input-row{
+  display:flex;background:var(--surface);
+  border:1px solid var(--border);border-top:none;
+  border-radius:0 0 12px 12px;overflow:hidden;
+}
+.chat-inp{
+  flex:1;background:transparent;border:none;border-radius:0;
+  padding:14px 18px;font-size:13px;color:var(--white);
+  font-family:'Geist',sans-serif;outline:none;
+}
+.chat-send-btn{
+  padding:10px 18px;background:var(--teal);border:none;
+  color:#080c10;font-weight:700;cursor:pointer;
+  font-family:'Geist',sans-serif;font-size:12px;transition:background 0.15s;
+}
+.chat-send-btn:hover{background:#90cdf4;}
+
+/* ── RESPONSIVE ── */
+@media(max-width:768px){
+  nav{padding:0 20px;}
+  .hero{padding:70px 20px 60px;}
+  .how-section,.page-inner{padding:60px 20px;}
+  h1{letter-spacing:-1px;}
+  .form-grid{grid-template-columns:1fr;}
+  .spend-grid{grid-template-columns:1fr 1fr;}
+  .opt-grid{grid-template-columns:1fr;}
+  .steps-grid{grid-template-columns:1fr;}
+  .stats-bar{flex-direction:column;}
+  .stat-item{border-right:none;border-bottom:1px solid var(--border);}
+  .stat-item:last-child{border-bottom:none;}
+}
+
+/* ── ANIMATIONS ── */
+.fade-in{opacity:0;transform:translateY(16px);animation:fadeIn 0.5s ease forwards;}
+.fade-in:nth-child(1){animation-delay:0.0s}
+.fade-in:nth-child(2){animation-delay:0.1s}
+.fade-in:nth-child(3){animation-delay:0.2s}
+.fade-in:nth-child(4){animation-delay:0.3s}
+@keyframes fadeIn{to{opacity:1;transform:none}}
+
+/* Cursor glow follow */
+.cursor-glow{
+  position:fixed;width:300px;height:300px;border-radius:50%;
+  background:radial-gradient(circle,rgba(99,179,237,0.06),transparent 70%);
+  pointer-events:none;z-index:0;
+  transform:translate(-50%,-50%);
+  transition:left 0.3s ease,top 0.3s ease;
+}
+</style>
+</head>
+<body>
+
+<div class="cursor-glow" id="cursorGlow"></div>
+
+<nav>
+  <div class="logo">Swipe<span>Smart</span></div>
+  <div class="nav-links">
+    <button class="nav-link active" onclick="showPage('home',this)">Home</button>
+    <button class="nav-link" onclick="showPage('optimizer',this)">Optimizer</button>
+    <button class="nav-link" onclick="showPage('finder',this)">Card Finder</button>
+    <button class="nav-link" onclick="showPage('chat',this)">AI Chat</button>
+  </div>
+  <div style="display:flex;align-items:center;gap:10px;">
+    <span class="beta-pill">Beta</span>
+    <button class="nav-cta" onclick="showPage('finder',null)">Get Started <span>→</span></button>
+  </div>
+</nav>
+
+<!-- ════ HOME ════ -->
+<div id="page-home" class="page active">
+
+  <div class="hero">
+    <div class="hero-badge fade-in"><span class="hero-badge-dot"></span>Credit Card Intelligence for India</div>
+    <h1 class="fade-in">Your cards earn less<br>than they <em>should.</em></h1>
+    <p class="hero-sub fade-in">Most Indians leave ₹20,000–₹50,000 in rewards unclaimed every year. SwipeSmart tells you exactly which card to swipe — and which card to get next.</p>
+    <div class="hero-ctas fade-in">
+      <button class="btn-primary" onclick="showPage('optimizer',null)">Optimise My Cards <span>→</span></button>
+      <button class="btn-ghost" onclick="showPage('finder',null)">Find My Best Card</button>
+      <button class="btn-ghost" onclick="showPage('chat',null)" style="border-color:rgba(99,179,237,0.25);color:var(--teal);">Chat with AI ✦</button>
+    </div>
+
+    <div class="social-proof fade-in">
+      <div class="avatars">
+        <div class="avatar">A</div><div class="avatar">R</div>
+        <div class="avatar">S</div><div class="avatar">M</div>
+        <div class="avatar" style="background:linear-gradient(135deg,#2c5282,#3182ce);">+</div>
+      </div>
+      <div class="social-text"><strong>36 cards</strong> across 13 banks · Verified March 2026</div>
+    </div>
+
+    <div class="stats-bar fade-in">
+      <div class="stat-item">
+        <div class="stat-num">₹28k</div>
+        <div class="stat-label">avg rewards missed/year</div>
+      </div>
+      <div class="stat-item">
+        <div class="stat-num">36</div>
+        <div class="stat-label">cards in database</div>
+      </div>
+      <div class="stat-item">
+        <div class="stat-num">60s</div>
+        <div class="stat-label">to your recommendation</div>
+      </div>
+      <div class="stat-item">
+        <div class="stat-num">8–11%</div>
+        <div class="stat-label">return on spend, optimised</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Ticker -->
+  <div class="ticker-section">
+    <div class="ticker-label">Cards in our database</div>
+    <div style="overflow:hidden;">
+      <div class="ticker-track" id="ticker"></div>
+    </div>
+  </div>
+
+  <!-- How it works -->
+  <div class="how-section">
+    <div class="section-eyebrow">How it works</div>
+    <div class="section-title">Three tools.<br>One simple goal.</div>
+    <div class="steps-grid">
+      <div class="step-card">
+        <div class="step-num">01</div>
+        <div class="step-title">Card Optimizer</div>
+        <div class="step-desc">Already have cards? Tell us which ones and how you spend. We'll show you the exact card to use for each category — groceries, travel, dining, fuel and more.</div>
+      </div>
+      <div class="step-card">
+        <div class="step-num">02</div>
+        <div class="step-title">Card Finder</div>
+        <div class="step-desc">Looking for a new card? Fill the quick form with your income, spend and lifestyle. We score all 36 cards and rank them for your exact profile — results in under 3 seconds.</div>
+      </div>
+      <div class="step-card" style="border-color:rgba(99,179,237,0.15);background:linear-gradient(135deg,rgba(99,179,237,0.04),var(--surface));">
+        <div class="step-num" style="color:rgba(99,179,237,0.35);">✦</div>
+        <div class="step-title">AI Advisor <span style="font-size:10px;font-weight:400;color:var(--teal);margin-left:6px;letter-spacing:0.5px;">NEW</span></div>
+        <div class="step-desc">Prefer a conversation? Chat with our AI advisor. Just describe your spending habits in plain language — it asks the right questions and explains exactly why a card suits you.</div>
+      </div>
+      <div class="step-card">
+        <div class="step-num">03</div>
+        <div class="step-title">Honest Data</div>
+        <div class="step-desc">Every reward rate is the effective % value-back after point redemption conversions. No marketing spin. Data verified against official bank MITC documents and Paisabazaar.</div>
+      </div>
+      <div class="step-card">
+        <div class="step-num">04</div>
+        <div class="step-title">No Conflict of Interest</div>
+        <div class="step-desc">We tell you which card is best for you — not which card pays us. If we ever add affiliate links, we'll disclose them clearly so you can factor that into the recommendation.</div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- ════ OPTIMIZER ════ -->
+<div id="page-optimizer" class="page">
+  <div class="page-inner">
+    <div class="page-header">
+      <div class="page-eyebrow">Card Optimizer</div>
+      <div class="page-title">Maximise what you already have</div>
+      <div class="page-sub">Select your current cards and enter your monthly spending — we'll map the best card to every category.</div>
+    </div>
+
+    <div class="section-eyebrow" style="margin-bottom:12px;">Step 1 — Your Cards</div>
+    <div class="search-wrapper">
+      <span class="search-icon">⌕</span>
+      <input type="text" id="cardSearch" placeholder="Search cards — try 'HDFC', 'travel', 'cashback', 'free'..." oninput="filterChips(this.value)" onfocus="this.style.borderColor='rgba(99,179,237,0.5)'" onblur="this.style.borderColor='var(--border)'">
+      <span class="search-count" id="chipCount"></span>
+    </div>
+    <div class="chips-container" id="cardChips">
+      <div class="chip" data-name="HDFC Regalia" data-tags="hdfc travel rewards lounge" onclick="toggleChip(this,'HDFC Regalia')">HDFC Regalia</div>
+      <div class="chip" data-name="HDFC Millennia" data-tags="hdfc cashback online shopping dining" onclick="toggleChip(this,'HDFC Millennia')">HDFC Millennia</div>
+      <div class="chip" data-name="HDFC Infinia Metal" data-tags="hdfc premium travel invite lounge" onclick="toggleChip(this,'HDFC Infinia Metal')">HDFC Infinia Metal</div>
+      <div class="chip" data-name="HDFC Tata Neu Infinity" data-tags="hdfc tata neu online groceries travel" onclick="toggleChip(this,'HDFC Tata Neu Infinity')">HDFC Tata Neu Infinity</div>
+      <div class="chip" data-name="HDFC Diners Black" data-tags="hdfc diners premium travel rewards" onclick="toggleChip(this,'HDFC Diners Black')">HDFC Diners Black</div>
+      <div class="chip" data-name="HDFC Swiggy" data-tags="hdfc swiggy dining food delivery online cashback" onclick="toggleChip(this,'HDFC Swiggy')">HDFC Swiggy</div>
+      <div class="chip" data-name="Axis Atlas" data-tags="axis travel miles lounge premium" onclick="toggleChip(this,'Axis Atlas')">Axis Atlas</div>
+      <div class="chip" data-name="Axis Ace" data-tags="axis cashback utility dining fuel" onclick="toggleChip(this,'Axis Ace')">Axis Ace</div>
+      <div class="chip" data-name="Axis Magnus" data-tags="axis travel miles premium rewards" onclick="toggleChip(this,'Axis Magnus')">Axis Magnus</div>
+      <div class="chip" data-name="Axis Flipkart" data-tags="axis flipkart online cashback swiggy" onclick="toggleChip(this,'Axis Flipkart')">Axis Flipkart</div>
+      <div class="chip" data-name="Axis Magnus Burgundy" data-tags="axis magnus burgundy travel miles hni" onclick="toggleChip(this,'Axis Magnus Burgundy')">Axis Magnus Burgundy</div>
+      <div class="chip" data-name="Axis My Zone" data-tags="axis myzone lifestyle entry dining movies swiggy" onclick="toggleChip(this,'Axis My Zone')">Axis My Zone</div>
+      <div class="chip" data-name="Axis Privilege" data-tags="axis privilege rewards travel lounge dining movies" onclick="toggleChip(this,'Axis Privilege')">Axis Privilege</div>
+      <div class="chip" data-name="SBI SimplyCLICK" data-tags="sbi online shopping low fee entry" onclick="toggleChip(this,'SBI SimplyCLICK')">SBI SimplyCLICK</div>
+      <div class="chip" data-name="SBI Elite" data-tags="sbi dining groceries lounge travel premium movies" onclick="toggleChip(this,'SBI Elite')">SBI Elite</div>
+      <div class="chip" data-name="SBI Cashback" data-tags="sbi cashback online all categories" onclick="toggleChip(this,'SBI Cashback')">SBI Cashback</div>
+      <div class="chip" data-name="SBI Aurum" data-tags="sbi aurum premium travel lounge dining" onclick="toggleChip(this,'SBI Aurum')">SBI Aurum</div>
+      <div class="chip" data-name="AMEX Gold" data-tags="amex american express gold rewards dining" onclick="toggleChip(this,'AMEX Gold')">AMEX Gold</div>
+      <div class="chip" data-name="AMEX Platinum Travel" data-tags="amex american express platinum travel flights lounge" onclick="toggleChip(this,'AMEX Platinum Travel')">AMEX Platinum Travel</div>
+      <div class="chip" data-name="ICICI Amazon Pay" data-tags="icici amazon cashback online free lifetime" onclick="toggleChip(this,'ICICI Amazon Pay')">ICICI Amazon Pay</div>
+      <div class="chip" data-name="ICICI Sapphire" data-tags="icici sapphire travel lounge dining rewards" onclick="toggleChip(this,'ICICI Sapphire')">ICICI Sapphire</div>
+      <div class="chip" data-name="ICICI Emeralde" data-tags="icici emeralde premium travel lounge invite" onclick="toggleChip(this,'ICICI Emeralde')">ICICI Emeralde</div>
+      <div class="chip" data-name="Kotak 811" data-tags="kotak 811 entry free fd secured beginner" onclick="toggleChip(this,'Kotak 811')">Kotak 811</div>
+      <div class="chip" data-name="Kotak League" data-tags="kotak league cashback dining movies" onclick="toggleChip(this,'Kotak League')">Kotak League</div>
+      <div class="chip" data-name="HSBC Live+" data-tags="hsbc live plus cashback dining groceries food" onclick="toggleChip(this,'HSBC Live+')">HSBC Live+</div>
+      <div class="chip" data-name="HSBC Cashback" data-tags="hsbc cashback flat simple all categories" onclick="toggleChip(this,'HSBC Cashback')">HSBC Cashback</div>
+      <div class="chip" data-name="IDFC First Wealth" data-tags="idfc first wealth free lifetime lounge travel" onclick="toggleChip(this,'IDFC First Wealth')">IDFC First Wealth</div>
+      <div class="chip" data-name="IDFC First Select" data-tags="idfc first select free lifetime entry" onclick="toggleChip(this,'IDFC First Select')">IDFC First Select</div>
+      <div class="chip" data-name="SC Ultimate" data-tags="standard chartered ultimate travel dining rewards lounge" onclick="toggleChip(this,'SC Ultimate')">SC Ultimate</div>
+      <div class="chip" data-name="RBL World Safari" data-tags="rbl travel zero forex international lounge" onclick="toggleChip(this,'RBL World Safari')">RBL World Safari</div>
+      <div class="chip" data-name="RBL World Prime SuperCard" data-tags="rbl supercard prime movies lounge emi" onclick="toggleChip(this,'RBL World Prime SuperCard')">RBL World Prime SuperCard</div>
+      <div class="chip" data-name="RBL World Plus SuperCard" data-tags="rbl supercard plus dining international rewards" onclick="toggleChip(this,'RBL World Plus SuperCard')">RBL World Plus SuperCard</div>
+      <div class="chip" data-name="YES First Exclusive" data-tags="yes bank first exclusive rewards dining low fee" onclick="toggleChip(this,'YES First Exclusive')">YES First Exclusive</div>
+      <div class="chip" data-name="Scapia Federal" data-tags="scapia federal travel zero forex free lounge" onclick="toggleChip(this,'Scapia Federal')">Scapia Federal</div>
+      <div class="chip" data-name="IndusInd EazyDiner" data-tags="indusind eazydiner dining restaurants discount" onclick="toggleChip(this,'IndusInd EazyDiner')">IndusInd EazyDiner</div>
+      <div class="chip" data-name="AU LIT" data-tags="au lit customizable entry lifestyle" onclick="toggleChip(this,'AU LIT')">AU LIT</div>
+    </div>
+    <div id="noResults"></div>
+    <div class="selected-summary" id="selectedSummary"></div>
+
+    <hr>
+    <div class="section-eyebrow" style="margin-bottom:12px;">Step 2 — Monthly Spend</div>
+    <div class="spend-grid">
+      <div class="spend-item"><div class="spend-label">🛒 Groceries</div><div class="prefix-input"><input type="number" id="s_grocery" placeholder="0" min="0"></div></div>
+      <div class="spend-item"><div class="spend-label">🍽️ Dining</div><div class="prefix-input"><input type="number" id="s_dining" placeholder="0" min="0"></div></div>
+      <div class="spend-item"><div class="spend-label">✈️ Travel</div><div class="prefix-input"><input type="number" id="s_travel" placeholder="0" min="0"></div></div>
+      <div class="spend-item"><div class="spend-label">🛍️ Online Shopping</div><div class="prefix-input"><input type="number" id="s_online" placeholder="0" min="0"></div></div>
+      <div class="spend-item"><div class="spend-label">⛽ Fuel</div><div class="prefix-input"><input type="number" id="s_fuel" placeholder="0" min="0"></div></div>
+      <div class="spend-item"><div class="spend-label">💡 Utilities</div><div class="prefix-input"><input type="number" id="s_utility" placeholder="0" min="0"></div></div>
+    </div>
+
+    <div class="submit-row">
+      <button class="btn-primary" onclick="runOptimizer()">Show My Optimal Setup →</button>
+      <p class="disclaimer">Your session is anonymous. No account required — just optimise.</p>
+    </div>
+
+    <div class="loading" id="opt-loading"><div class="spinner"></div>Calculating your optimal card strategy...</div>
+
+    <div class="results-box" id="opt-results" style="display:none;">
+      <div class="savings-card">
+        <div>
+          <div class="savings-label">Additional annual rewards if you optimise now</div>
+          <div class="savings-amount" id="opt-savings">₹0</div>
+          <div class="savings-note">vs. using a single card for everything</div>
+        </div>
+        <div style="font-size:36px;opacity:0.6;">🎯</div>
+      </div>
+      <div class="section-eyebrow" style="margin-bottom:12px;">Best Card Per Category</div>
+      <div class="opt-grid" id="opt-grid"></div>
+      <div class="tips-box"><div class="tips-title">💡 PRO TIPS</div><div class="tips-body" id="opt-tips"></div></div>
+    </div>
+  </div>
+</div>
+
+<!-- ════ CARD FINDER ════ -->
+<div id="page-finder" class="page">
+  <div class="page-inner">
+    <div class="page-header">
+      <div class="page-eyebrow">Card Finder</div>
+      <div class="page-title">Find your perfect card</div>
+      <div class="page-sub">Fill in your profile — we'll score all 36 cards and surface your best matches instantly.</div>
+    </div>
+
+    <div class="form-grid">
+        <div class="form-group"><label>Monthly Income</label><div class="prefix-input"><input type="number" id="f_income" placeholder="50000" min="0"></div></div>
+        <div class="form-group"><label>Total Monthly Card Spend</label><div class="prefix-input"><input type="number" id="f_spend" placeholder="20000" min="0"></div></div>
+        <div class="form-group">
+          <label>Primary Spend Category</label>
+          <select id="f_category">
+            <option value="">Select category</option>
+            <option value="travel">Travel</option>
+            <option value="dining">Dining / Food</option>
+            <option value="online">Online Shopping</option>
+            <option value="groceries">Groceries</option>
+            <option value="fuel">Fuel</option>
+            <option value="everything">Everything equally</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Lifestyle Priority</label>
+          <select id="f_lifestyle">
+            <option value="">Select priority</option>
+            <option value="travel_perks">Travel perks & lounge access</option>
+            <option value="cashback">Maximum cashback</option>
+            <option value="rewards_points">Reward points & redemption</option>
+            <option value="low_fee">Low / no annual fee</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Max Annual Fee</label>
+          <select id="f_fee">
+            <option value="0">Free only (₹0)</option>
+            <option value="500">Up to ₹500</option>
+            <option value="1000">Up to ₹1,000</option>
+            <option value="3000">Up to ₹3,000</option>
+            <option value="5000">Up to ₹5,000</option>
+            <option value="99999">No limit</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>International Travel</label>
+          <select id="f_intl">
+            <option value="no">No</option>
+            <option value="occasionally">Occasionally (1–2x/yr)</option>
+            <option value="frequently">Frequently (3+ times/yr)</option>
+          </select>
+        </div>
+      </div>
+      <div class="submit-row">
+        <button class="btn-primary" onclick="runFinder()">Find My Best Cards →</button>
+        <p class="disclaimer">Data verified against official bank sources. Accurate as of March 2026.</p>
+      </div>
+      <div class="loading" id="find-loading"><div class="spinner"></div>Matching your profile across 36 cards...</div>
+      <div id="find-results" style="display:none;margin-top:36px;">
+        <div class="results-heading">Your Top Matches</div>
+        <div class="results-sub-text" id="find-sub"></div>
+        <div id="find-cards"></div>
+      </div>
+  </div>
+</div>
+
+<!-- ════ AI CHAT ════ -->
+<div id="page-chat" class="page">
+  <div class="page-inner" style="max-width:800px;">
+    <div class="page-header">
+      <div class="page-eyebrow">AI Advisor</div>
+      <div class="page-title">Chat with your card advisor</div>
+      <div class="page-sub">Describe your income, spending habits and lifestyle — our AI will find the best card for you and explain exactly why.</div>
+    </div>
+
+    <div class="chat-wrap" style="max-width:100%;">
+      <div class="chat-msgs" id="chatMessages" style="min-height:440px;max-height:520px;"></div>
+      <div class="chat-quick" id="quickReplies"></div>
+      <div class="chat-input-row">
+        <input class="chat-inp" id="chatInput" type="text" placeholder="e.g. I earn ₹80k/month, spend mostly on travel and dining..." onkeydown="if(event.key==='Enter')sendChat()">
+        <button class="chat-send-btn" onclick="resetChat()" style="background:var(--surface2);color:var(--muted);border-left:1px solid var(--border);" title="Start a new conversation">↺ New</button>
+        <button class="chat-send-btn" onclick="sendChat()">Send →</button>
+      </div>
+    </div>
+
+    <div style="margin-top:20px;display:flex;flex-wrap:wrap;gap:8px;">
+      <span style="font-size:11px;color:var(--muted);align-self:center;margin-right:4px;">Try asking:</span>
+      <button class="qr-btn" onclick="injectPrompt('Which card gives the best rewards for travel?')">Best travel card?</button>
+      <button class="qr-btn" onclick="injectPrompt('I earn ₹1.2L/month and spend ₹40k mostly on dining. What card suits me?')">Dining rewards</button>
+      <button class="qr-btn" onclick="injectPrompt('What is airport lounge access?')">Lounge access?</button>
+      <button class="qr-btn" onclick="injectPrompt('Compare the top cashback cards in India')">Cashback cards</button>
+      <button class="qr-btn" onclick="injectPrompt('I want a lifetime free card with good rewards')">Zero fee cards</button>
+    </div>
+
+    <p style="font-size:11px;color:rgba(255,255,255,0.2);margin-top:24px;line-height:1.5;">
+      Your session is anonymous. No account required. AI responses are limited per session to keep the service fast.
+    </p>
+  </div>
+</div>
+
+<script>
+
+// ═══════════════════════════════════════
+// CARD DATABASE
+// ═══════════════════════════════════════
+// DATA LAST VERIFIED: March 2026 against official bank websites, Paisabazaar, CardInsider & CardExpert
+// Reward rates expressed as effective % value-back after point redemption conversions
+// ─── DATA VERIFIED AGAINST OFFICIAL BANK SOURCES — March 2026 ───
+// Reward rates = effective % value-back. Sources: official bank websites, MITC docs, Paisabazaar, CardInsider (verified March 2026)
+// HDFC Regalia: 4 pts/₹150 base (2.67%). 5X on Myntra/Nykaa/M&S/Reliance Digital. SmartBuy travel 1pt=₹0.50.
+// HDFC Millennia: 5% on 10 partner brands (capped ₹1k/mo). 1.5% all other spends. No fuel rewards.
+// Axis Atlas: 5 EDGE Miles/₹100 travel, 2 miles/₹100 other. No fuel/utility/insurance/rent rewards. No fee waiver.
+// Axis Ace: 5% utility via GPay Android only, 4% Zomato/Swiggy/Ola (cap ₹500/mo combined), 1.5% other. Zero on fuel.
+// SBI SimplyCLICK: 10x on select partners = 2.5% effective (4pts=₹1). 5x general online=1.25%. 1x offline=0.25%. No lounge.
+// SBI Elite: 5x dining/grocery/dept stores = 1.25%. Fee waiver needs ₹10L. Club Vistara discontinued.
+// AMEX Gold: 1 MR/₹50 = 2% base. No fuel from June 2025. Annual fee ₹1k joining + ₹4.5k renewal yr2.
+// AMEX Plat Travel: 1 MR/₹50. Milestone IndiGo vouchers. Fee ₹3.5k joining + ₹5k renewal.
+// ICICI Amazon Pay: 5%(Prime)/3%(non-Prime) Amazon, 2% Amazon Pay partners, 1% other. No utility outside Amazon from Oct 2025.
+// ICICI Sapphiro: 2% base all eligible spends. Fee waiver at ₹6L (not ₹3.5L). Min income ₹9.6L/yr.
+// Kotak 811: 4pts/₹100 online = 0.8% (1pt=₹0.20). 1pt/₹100 offline = 0.2%. Secured card against FD. Fee ₹0 (LTF).
+// Kotak League: Up to 8pts/₹150 = 1.33% (1pt=₹0.25). Fee ₹499 waived at ₹50k spend (not ₹1999/₹2L as previously coded).
+const CARDS = [
+  {
+    id: 'hdfc_regalia',
+    name: 'Regalia Gold',
+    bank: 'HDFC Bank',
+    icon: '🏦',
+    fee: 2500,
+    feeWaiver: 'Waived on ₹4L annual spend',
+    minIncome: 100000,
+    network: 'Visa',
+    rewards: { travel:5, dining:2.7, online:2.7, groceries:2.7, fuel:0, utility:2.7, default:2.7 },
+    perks: ['12 domestic lounge visits/yr (3/qtr)','6 intl lounge visits/yr via Priority Pass','5X rewards on Myntra/Nykaa/M&S/Reliance Digital','₹5k flight voucher milestone at ₹5L annual spend'],
+    intlTravel: true,
+    welcomeBonus: 2500,
+    bestFor: ['travel_perks','rewards_points'],
+    categories: ['travel','online']
+  },
+  {
+    id: 'hdfc_millennia',
+    name: 'Millennia',
+    bank: 'HDFC Bank',
+    icon: '🏦',
+    fee: 1000,
+    feeWaiver: 'Waived on ₹1L annual spend',
+    minIncome: 35000,
+    network: 'Visa',
+    rewards: { travel:1.5, dining:5, online:5, groceries:1.5, fuel:0, utility:1.5, default:1.5 },
+    perks: ['5% cashback on Amazon/Flipkart/Zomato/Swiggy/Uber & 7 more brands (cap ₹1k/mo)','1.5% on all other eligible spends','₹1k gift voucher on ₹1L quarterly spend','1% fuel surcharge waiver'],
+    intlTravel: false,
+    welcomeBonus: 1000,
+    bestFor: ['cashback','online'],
+    categories: ['online','dining']
+  },
+  {
+    id: 'axis_atlas',
+    name: 'Atlas',
+    bank: 'Axis Bank',
+    icon: '💳',
+    fee: 5000,
+    feeWaiver: 'No spend waiver — renewal EDGE Miles bonus instead',
+    minIncome: 150000,
+    network: 'Visa',
+    rewards: { travel:5, dining:2, online:2, groceries:2, fuel:0, utility:0, default:2 },
+    perks: ['5 EDGE Miles/₹100 on direct airline/hotel & TravelEDGE portal','2 EDGE Miles/₹100 on all other eligible spends','1:2 transfer to 20+ airline & hotel partners','Tier-based lounge access (Silver/Gold/Platinum)'],
+    intlTravel: true,
+    welcomeBonus: 2500,
+    bestFor: ['travel_perks'],
+    categories: ['travel']
+  },
+  {
+    id: 'axis_ace',
+    name: 'Ace',
+    bank: 'Axis Bank',
+    icon: '💳',
+    fee: 499,
+    feeWaiver: 'Waived on ₹2L annual spend',
+    minIncome: 25000,
+    network: 'Visa',
+    rewards: { travel:1.5, dining:4, online:1.5, groceries:1.5, fuel:0, utility:5, default:1.5 },
+    perks: ['5% cashback on utility bills via Google Pay (Android only)','4% cashback on Zomato, Swiggy & Ola (₹500 combined cap/mo)','1.5% on all other eligible spends — uncapped','4 domestic lounge visits/yr'],
+    intlTravel: false,
+    welcomeBonus: 0,
+    bestFor: ['cashback','low_fee'],
+    categories: ['utility','dining']
+  },
+  {
+    id: 'sbi_simplyclick',
+    name: 'SimplyCLICK',
+    bank: 'SBI Card',
+    icon: '🔵',
+    fee: 499,
+    feeWaiver: 'Waived on ₹1L annual spend',
+    minIncome: 20000,
+    network: 'Visa',
+    rewards: { travel:1.25, dining:1.25, online:2.5, groceries:0.25, fuel:0, utility:0, default:0.25 },
+    perks: ['10X points on Myntra/BookMyShow/Cleartrip/Apollo & partners = 2.5% value','5X on all other online spends = 1.25%','₹2k Cleartrip/Yatra e-voucher at ₹1L & ₹2L milestones','No lounge access on this card'],
+    intlTravel: false,
+    welcomeBonus: 500,
+    bestFor: ['online','low_fee'],
+    categories: ['online']
+  },
+  {
+    id: 'sbi_elite',
+    name: 'Elite',
+    bank: 'SBI Card',
+    icon: '🔵',
+    fee: 4999,
+    feeWaiver: 'Waived on ₹10L annual spend',
+    minIncome: 60000,
+    network: 'Mastercard',
+    rewards: { travel:0.25, dining:1.25, online:0.25, groceries:1.25, fuel:0, utility:0.25, default:0.25 },
+    perks: ['2 free BookMyShow movie tickets/month worth ₹6k/yr','8 domestic + 6 intl lounge visits/yr','5X rewards on dining, grocery & departmental stores','₹5k welcome voucher + Club ITC Silver membership (for new cards from Sep 2025)'],
+    intlTravel: true,
+    welcomeBonus: 5000,
+    bestFor: ['travel_perks'],
+    categories: ['dining','groceries']
+  },
+  {
+    id: 'amex_gold',
+    name: 'Gold Charge Card',
+    bank: 'American Express',
+    icon: '⭐',
+    fee: 1000,
+    feeWaiver: 'Joining ₹1k (yr 1); renewal ₹4,500+GST from yr 2',
+    minIncome: 60000,
+    network: 'Amex',
+    rewards: { travel:1.4, dining:1.4, online:1.4, groceries:1.4, fuel:0, utility:1.4, default:1.4 },
+    perks: ['1 MR point per ₹50 on all spends (~2% base)','1,000 bonus MR points/month on 6 txns of ₹1k+ each','5X via Amex Reward Multiplier portal','Gold Collection: Taj/Amazon/Flipkart vouchers at 18K & 24K MR thresholds'],
+    intlTravel: false,
+    welcomeBonus: 1000,
+    bestFor: ['rewards_points'],
+    categories: ['online','dining']
+  },
+  {
+    id: 'amex_plat_travel',
+    name: 'Platinum Travel',
+    bank: 'American Express',
+    icon: '⭐',
+    fee: 3500,
+    feeWaiver: 'No spend-based waiver',
+    minIncome: 100000,
+    network: 'Amex',
+    rewards: { travel:2, dining:2, online:2, groceries:2, fuel:0, utility:2, default:2 },
+    perks: ['Milestone IndiGo vouchers worth up to ₹11,800/yr','4 domestic lounge visits/qtr (16/yr) via Visa','1 MR point per ₹50 on all eligible spends','Lower joining fee vs Gold Charge Card'],
+    intlTravel: true,
+    welcomeBonus: 3500,
+    bestFor: ['travel_perks','rewards_points'],
+    categories: ['travel','dining']
+  },
+  {
+    id: 'icici_amazon',
+    name: 'Amazon Pay ICICI',
+    bank: 'ICICI Bank',
+    icon: '🟠',
+    fee: 0,
+    feeWaiver: 'Lifetime free — no annual fee ever',
+    minIncome: 20000,
+    network: 'Visa',
+    rewards: { travel:5, dining:2, online:5, groceries:2, fuel:0, utility:0, default:1 },
+    perks: ['5% cashback on Amazon.in for Prime members (3% non-Prime)','2% on 100+ Amazon Pay partner merchants','1% on all other eligible spends — uncapped, no expiry','No joining or annual fee ever'],
+    intlTravel: false,
+    welcomeBonus: 200,
+    bestFor: ['cashback','low_fee','online'],
+    categories: ['online','travel']
+  },
+  {
+    id: 'icici_sapphire',
+    name: 'Sapphiro',
+    bank: 'ICICI Bank',
+    icon: '🟠',
+    fee: 3500,
+    feeWaiver: 'Waived on ₹6L annual spend',
+    minIncome: 80000,
+    network: 'Visa',
+    rewards: { travel:2, dining:2, online:2, groceries:2, fuel:0, utility:2, default:2 },
+    perks: ['Unlimited domestic + intl lounge access','2% rewards on all eligible categories','12X rewards on hotel bookings via ICICI iShop portal','Complimentary golf rounds on ₹6L+ annual spend'],
+    intlTravel: true,
+    welcomeBonus: 3500,
+    bestFor: ['travel_perks','rewards_points'],
+    categories: ['travel','dining']
+  },
+  {
+    id: 'kotak_811',
+    name: '811 #DreamDifferent',
+    bank: 'Kotak Mahindra Bank',
+    icon: '🔴',
+    fee: 0,
+    feeWaiver: 'Lifetime free (secured against FD — no income proof needed)',
+    minIncome: 0,
+    network: 'Visa',
+    rewards: { travel:0.2, dining:0.2, online:0.8, groceries:0.2, fuel:0, utility:0.2, default:0.2 },
+    perks: ['Best first card — no income proof, secured against Fixed Deposit','4 pts/₹100 online = 0.8% value (1pt=₹0.20)','₹1k milestone voucher on ₹72k annual spend','1% fuel surcharge waiver'],
+    intlTravel: false,
+    welcomeBonus: 0,
+    bestFor: ['low_fee'],
+    categories: ['online']
+  },
+  {
+    id: 'kotak_league',
+    name: 'League Platinum',
+    bank: 'Kotak Mahindra Bank',
+    icon: '🔴',
+    fee: 499,
+    feeWaiver: 'Waived on ₹50k annual spend',
+    minIncome: 25000,
+    network: 'Visa',
+    rewards: { travel:0.67, dining:1.33, online:1.33, groceries:0.67, fuel:0, utility:0.67, default:0.67 },
+    perks: ['Up to 8 pts/₹150 on select categories = 1.33% value','3 free PVR tickets/yr on ₹75k annual spend','4 domestic lounge visits/yr','1% fuel surcharge waiver'],
+    intlTravel: false,
+    welcomeBonus: 500,
+    bestFor: ['low_fee','rewards_points'],
+    categories: ['dining','online']
+  },
+  // ── AXIS MY ZONE & PRIVILEGE (validated March 2026) ──────────────────────
+  {
+    id: 'axis_myzone',
+    name: 'My Zone',
+    bank: 'Axis Bank',
+    icon: '💳',
+    fee: 500,
+    feeWaiver: 'Often issued Lifetime Free via select channels — check approval letter',
+    minIncome: 15000,
+    network: 'Visa',
+    rewards: { travel:0, dining:0.5, online:0.5, groceries:0, fuel:0, utility:0, default:0.5 },
+    perks: ['4 EDGE pts/₹200 on all eligible spends = ~0.5% effective (1pt=₹0.25 max)','Buy 1 Get 1 movie ticket via District app — capped ₹200/month (from June 2025)','₹120 off on Swiggy food orders — 2x/month (min ₹500 order, code AXIS120)','Complimentary SonyLIV Premium membership (yr 1 on joining; renewal needs ₹1.5L annual spend)','1 domestic lounge visit/qtr — requires ₹50k spend in previous 3 months','No rewards on fuel, utilities, rent, insurance, education, wallet transactions','Best for: first credit card, movie buffs, Swiggy frequent users'],
+    intlTravel: false,
+    welcomeBonus: 0,
+    bestFor: ['low_fee'],
+    categories: ['dining','online']
+  },
+  {
+    id: 'axis_privilege',
+    name: 'Privilege',
+    bank: 'Axis Bank',
+    icon: '💳',
+    fee: 1500,
+    feeWaiver: 'Waived on ₹5L annual spend (excl. utilities, rent, fuel, insurance, wallet, govt)',
+    minIncome: 50000,
+    network: 'Visa',
+    rewards: { travel:1, dining:1, online:1, groceries:1, fuel:0, utility:0, default:1 },
+    perks: ['10 EDGE pts/₹200 on all eligible domestic & intl spends = 1% effective (1pt=₹0.20)','No category caps — unlimited rewards on all eligible spends','12,500 welcome EDGE pts = ₹2,500 value on 1st spend within 30 days','10,000 bonus pts on ₹2.5L annual spend = extra ₹2,000 (0.8% boost)','8 domestic lounge visits/yr — requires ₹50k spend in previous 3 months (2/qtr)','BOGO movie via District app — capped ₹250/month (updated June 2025, use code AXISPRIVILEGE)','Up to ₹800 off dining via EazyDiner — once/month (min spend ₹2,000)','Miles transfer to airline partners possible (EDGE Rewards portal)'],
+    intlTravel: false,
+    welcomeBonus: 2500,
+    bestFor: ['rewards_points'],
+    categories: ['online','dining','travel']
+  },
+  // ── RBL SUPERCARDS (validated March 2026) ─────────────────────────────────
+  {
+    id: 'rbl_world_prime',
+    name: 'World Prime SuperCard',
+    bank: 'RBL Bank',
+    icon: '🟤',
+    fee: 2999,
+    feeWaiver: 'No spend-based waiver',
+    minIncome: 40000,
+    network: 'Mastercard',
+    rewards: { travel:0.5, dining:0.5, online:1, groceries:0.5, fuel:0.5, utility:0.5, default:0.5 },
+    perks: ['2pts/₹100 base = 0.5% effective (1pt=₹0.25)','4pts/₹100 on online spends = 1% (capped 1,000pts/month)','8 domestic lounge visits/yr — requires ₹15k prev-quarter spend','1+1 BookMyShow movie tickets twice a month (up to ₹200)','Emergency Advance: convert cash limit to 3-month interest-free personal loan','Note: Low reward rate relative to fee — consider SBI Cashback or HDFC Millennia instead'],
+    intlTravel: false,
+    welcomeBonus: 3000,
+    bestFor: ['low_fee'],
+    categories: ['online']
+  },
+  {
+    id: 'rbl_world_plus',
+    name: 'World Plus SuperCard',
+    bank: 'RBL Bank',
+    icon: '🟤',
+    fee: 4999,
+    feeWaiver: 'No spend-based waiver',
+    minIncome: 60000,
+    network: 'Mastercard',
+    rewards: { travel:0.5, dining:5, online:0.5, groceries:0.5, fuel:0.5, utility:0.5, default:0.5 },
+    perks: ['20pts/₹100 on dining = 5% effective (capped ₹2,000pts/month)','20pts/₹100 on international spends = 5% effective (capped ₹2,000pts/month)','8 domestic lounge visits/yr — requires ₹35k prev-quarter spend','1+1 BookMyShow tickets 2x/month (up to ₹200)','Milestone: 20k pts at ₹3L + additional 20k pts at ₹5L annual spend','Note: Only worth it if you spend ₹40k+/month on dining — otherwise fee outweighs value'],
+    intlTravel: true,
+    welcomeBonus: 5000,
+    bestFor: ['dining'],
+    categories: ['dining']
+  },
+  // ── 20 NEW CARDS (validated March 2026) ──────────────────────────────────
+  {
+    id: 'hdfc_infinia',
+    name: 'Infinia Metal',
+    bank: 'HDFC Bank',
+    icon: '🏦',
+    fee: 12500,
+    feeWaiver: 'Waived on ₹10L annual spend',
+    minIncome: 300000,
+    network: 'Visa',
+    rewards: { travel:3.33, dining:3.33, online:3.33, groceries:3.33, fuel:1, utility:3.33, default:3.33 },
+    perks: ['Unlimited domestic + intl lounge (Priority Pass)','5 pts/₹150 base = 3.33% (1pt=₹1 via SmartBuy travel)','10X on SmartBuy travel/shopping (up to 15k pts/month)','Unlimited golf + Club Marriott + ITC 3-night/2-pay','Invite-only: needs ₹5L monthly salary or ₹8L existing HDFC limit'],
+    intlTravel: true,
+    welcomeBonus: 12500,
+    bestFor: ['travel_perks','rewards_points'],
+    categories: ['travel','online','dining']
+  },
+  {
+    id: 'hdfc_tata_neu',
+    name: 'Tata Neu Infinity',
+    bank: 'HDFC Bank',
+    icon: '🏦',
+    fee: 1499,
+    feeWaiver: 'Waived on ₹3L annual spend',
+    minIncome: 100000,
+    network: 'Visa',
+    rewards: { travel:5, dining:1.5, online:5, groceries:5, fuel:0, utility:1.5, default:1.5 },
+    perks: ['5–10% NeuCoins on Tata brands (Air India, BigBasket, Croma, Westside)','1.5% on all other spends','8 domestic + 4 intl lounge visits/yr','₹10k Tata CLiQ welcome voucher','NeuCoins validity: 12 months from credit date (from Aug 2025)'],
+    intlTravel: true,
+    welcomeBonus: 1499,
+    bestFor: ['cashback','online'],
+    categories: ['online','groceries','travel']
+  },
+  {
+    id: 'hdfc_diners_black',
+    name: 'Diners Club Black',
+    bank: 'HDFC Bank',
+    icon: '🏦',
+    fee: 10000,
+    feeWaiver: 'Waived on ₹5L annual spend',
+    minIncome: 250000,
+    network: 'Diners',
+    rewards: { travel:3.33, dining:3.33, online:3.33, groceries:3.33, fuel:1, utility:3.33, default:3.33 },
+    perks: ['5 pts/₹150 base = 3.33% (1pt=₹1 SmartBuy)','10X SmartBuy travel/shopping (15k pts/month cap)','Unlimited domestic + 6 intl lounge visits/yr','Amazon Prime + Swiggy One membership welcome','10k bonus pts quarterly on ₹4L spend milestone'],
+    intlTravel: true,
+    welcomeBonus: 10000,
+    bestFor: ['travel_perks','rewards_points'],
+    categories: ['travel','dining','online']
+  },
+  {
+    id: 'hdfc_swiggy',
+    name: 'Swiggy HDFC Bank',
+    bank: 'HDFC Bank',
+    icon: '🏦',
+    fee: 500,
+    feeWaiver: 'Waived on ₹2L annual spend',
+    minIncome: 25000,
+    network: 'Visa',
+    rewards: { travel:1, dining:10, online:5, groceries:5, fuel:0, utility:1, default:1 },
+    perks: ['10% cashback on Swiggy (food, Instamart, Dineout) — capped ₹1,500/month','5% on online spends across all merchants — capped ₹1,500/month','1% on all other spends — uncapped','Complimentary 3-month Swiggy One membership'],
+    intlTravel: false,
+    welcomeBonus: 500,
+    bestFor: ['cashback','dining'],
+    categories: ['dining','online']
+  },
+  {
+    id: 'sbi_cashback',
+    name: 'Cashback SBI',
+    bank: 'SBI Card',
+    icon: '🔵',
+    fee: 999,
+    feeWaiver: 'Waived on ₹2L annual spend',
+    minIncome: 20000,
+    network: 'Visa',
+    rewards: { travel:5, dining:5, online:5, groceries:5, fuel:0, utility:0, default:1 },
+    perks: ['5% cashback on ALL online spends — no merchant restriction (cap ₹2k/month from Apr 2026)','1% cashback on all offline spends','Auto-credited to statement within 2 days','Exclusions: fuel, utility, insurance, rent, wallets, jewellery, education'],
+    intlTravel: false,
+    welcomeBonus: 0,
+    bestFor: ['cashback','online'],
+    categories: ['online','dining','travel']
+  },
+  {
+    id: 'axis_flipkart',
+    name: 'Flipkart Axis',
+    bank: 'Axis Bank',
+    icon: '💳',
+    fee: 500,
+    feeWaiver: 'Often issued as Lifetime Free',
+    minIncome: 20000,
+    network: 'Visa',
+    rewards: { travel:1.5, dining:4, online:5, groceries:1.5, fuel:0, utility:1.5, default:1.5 },
+    perks: ['5% cashback on Flipkart & Cleartrip (capped ₹4,000/qtr each from June 2025)','7.5% cashback on Myntra (capped ₹4,000/qtr)','4% on Swiggy & Uber (capped ₹500/month combined)','No lounge access (discontinued July 2025)'],
+    intlTravel: false,
+    welcomeBonus: 500,
+    bestFor: ['cashback','online','low_fee'],
+    categories: ['online','dining']
+  },
+  {
+    id: 'axis_magnus',
+    name: 'Magnus',
+    bank: 'Axis Bank',
+    icon: '💳',
+    fee: 10000,
+    feeWaiver: 'Waived on ₹15L annual spend',
+    minIncome: 150000,
+    network: 'Visa',
+    rewards: { travel:9, dining:3, online:3, groceries:3, fuel:0, utility:0, default:3 },
+    perks: ['12 EDGE pts/₹200 base = 3% (up to ₹1.5L/month)','35 EDGE pts/₹200 on spends above ₹1.5L = ~8.75%','60 EDGE pts/₹200 on TravelEDGE portal bookings','Tier-based lounge access (Silver/Gold/Platinum)','Transfer to 20+ airline & hotel partners at 1:1'],
+    intlTravel: true,
+    welcomeBonus: 10000,
+    bestFor: ['travel_perks','rewards_points'],
+    categories: ['travel','online']
+  },
+  {
+    id: 'hsbc_live_plus',
+    name: 'Live+',
+    bank: 'HSBC Bank',
+    icon: '🔷',
+    fee: 999,
+    feeWaiver: 'Waived on ₹2L annual spend',
+    minIncome: 25000,
+    network: 'Visa',
+    rewards: { travel:1.5, dining:10, online:1.5, groceries:10, fuel:0, utility:1.5, default:1.5 },
+    perks: ['10% cashback on dining, groceries & food delivery — capped ₹1,000/month total','1.5% unlimited cashback on all other eligible spends','No merchant restrictions on base 1.5% rate','Simple statement credit — no points to track'],
+    intlTravel: false,
+    welcomeBonus: 0,
+    bestFor: ['cashback'],
+    categories: ['dining','groceries']
+  },
+  {
+    id: 'idfc_wealth',
+    name: 'First Wealth',
+    bank: 'IDFC First Bank',
+    icon: '🟢',
+    fee: 0,
+    feeWaiver: 'Lifetime free — no annual fee ever',
+    minIncome: 25000,
+    network: 'Visa',
+    rewards: { travel:0.5, dining:0.5, online:0.5, groceries:0.5, fuel:0, utility:0.5, default:0.5 },
+    perks: ['Lifetime free with premium perks','0.5% on spends ≤₹20k/month; 1.66% above ₹20k/month','8 domestic + 8 intl lounge visits/yr (requires ₹20k prev-month spend)','2 free golf rounds/month, BOGO movie tickets','1.5% forex markup — among lowest in India','Points never expire'],
+    intlTravel: true,
+    welcomeBonus: 500,
+    bestFor: ['low_fee','travel_perks'],
+    categories: ['travel','online']
+  },
+  {
+    id: 'sc_ultimate',
+    name: 'Ultimate',
+    bank: 'Standard Chartered',
+    icon: '🔶',
+    fee: 5000,
+    feeWaiver: 'No spend-based waiver',
+    minIncome: 100000,
+    network: 'Visa',
+    rewards: { travel:3.3, dining:5, online:3.3, groceries:3.3, fuel:1, utility:3.3, default:3.3 },
+    perks: ['3.3 pts/₹100 on all eligible spends (1pt=₹1) = 3.3% base','5% on dining at partner restaurants','Unlimited domestic lounge + 4 intl visits/yr','Low forex markup: 2%','Golf privileges + travel insurance'],
+    intlTravel: true,
+    welcomeBonus: 5000,
+    bestFor: ['travel_perks','rewards_points'],
+    categories: ['travel','dining','online']
+  },
+  {
+    id: 'rbl_world_safari',
+    name: 'World Safari',
+    bank: 'RBL Bank',
+    icon: '🟤',
+    fee: 3000,
+    feeWaiver: 'Waived on ₹3L annual spend',
+    minIncome: 50000,
+    network: 'Mastercard',
+    rewards: { travel:3, dining:2, online:2, groceries:2, fuel:0, utility:2, default:2 },
+    perks: ['ZERO forex markup — best card for international spends','3% rewards on all travel spends','Lounge access conditional on ₹5k prev-month spend (from July 2025)','Golf rounds + travel insurance','Strong option for international travelers'],
+    intlTravel: true,
+    welcomeBonus: 3000,
+    bestFor: ['travel_perks'],
+    categories: ['travel']
+  },
+  {
+    id: 'yes_first_exclusive',
+    name: 'First Exclusive',
+    bank: 'YES Bank',
+    icon: '🟡',
+    fee: 999,
+    feeWaiver: 'Often issued Lifetime Free',
+    minIncome: 25000,
+    network: 'Mastercard',
+    rewards: { travel:1.5, dining:1.5, online:1.5, groceries:1.5, fuel:1, utility:1.5, default:1.5 },
+    perks: ['12 pts/₹200 = ~1.5% base on all eligible spends','Up to 3X on accelerated categories (dining, travel)','Domestic lounge access','Often available as lifetime free','Good dining discounts through EazyDiner partnerships'],
+    intlTravel: false,
+    welcomeBonus: 0,
+    bestFor: ['low_fee','cashback'],
+    categories: ['dining','online']
+  },
+  {
+    id: 'scapia_federal',
+    name: 'Scapia Federal',
+    bank: 'Federal Bank (Scapia)',
+    icon: '🟠',
+    fee: 0,
+    feeWaiver: 'Lifetime free',
+    minIncome: 15000,
+    network: 'Visa',
+    rewards: { travel:10, dining:2, online:2, groceries:2, fuel:0, utility:2, default:2 },
+    perks: ['Lifetime free with ZERO forex markup','10% Scapia Coins on travel bookings via Scapia app','2% on all other spends','Unlimited domestic lounge on ₹10k/month spend','Great entry card for international travel'],
+    intlTravel: true,
+    welcomeBonus: 0,
+    bestFor: ['travel_perks','low_fee'],
+    categories: ['travel']
+  },
+  {
+    id: 'icici_emeralde',
+    name: 'Emeralde',
+    bank: 'ICICI Bank',
+    icon: '🟠',
+    fee: 12000,
+    feeWaiver: 'Waived on ₹15L annual spend',
+    minIncome: 200000,
+    network: 'Visa',
+    rewards: { travel:3, dining:3, online:3, groceries:3, fuel:0, utility:3, default:3 },
+    perks: ['6 pts/₹200 base = 3% on all eligible spends','Unlimited domestic + intl lounge access','Complimentary golf + concierge services','Travel insurance + 0% forex on select transactions','Invite-based for premium customers'],
+    intlTravel: true,
+    welcomeBonus: 12000,
+    bestFor: ['travel_perks','rewards_points'],
+    categories: ['travel','dining','online']
+  },
+  {
+    id: 'hsbc_cashback',
+    name: 'Cashback',
+    bank: 'HSBC Bank',
+    icon: '🔷',
+    fee: 750,
+    feeWaiver: 'Waived on ₹1L annual spend',
+    minIncome: 25000,
+    network: 'Visa',
+    rewards: { travel:1.5, dining:1.5, online:1.5, groceries:1.5, fuel:1.5, utility:1.5, default:1.5 },
+    perks: ['Flat 1.5% unlimited cashback on ALL eligible spends — no exclusions','No merchant or category restrictions on base rate','Simple, predictable rewards — no points to manage','Low annual fee with easy waiver'],
+    intlTravel: false,
+    welcomeBonus: 0,
+    bestFor: ['cashback','low_fee'],
+    categories: ['online','dining','groceries','utility']
+  },
+  {
+    id: 'indusind_eazydiner',
+    name: 'EazyDiner IndusInd',
+    bank: 'IndusInd Bank',
+    icon: '🔵',
+    fee: 2499,
+    feeWaiver: 'Waived on ₹3L annual spend',
+    minIncome: 50000,
+    network: 'Visa',
+    rewards: { travel:1.5, dining:8, online:2, groceries:1.5, fuel:0, utility:1.5, default:1.5 },
+    perks: ['Up to 25% off (max ₹1,000/visit) at partner restaurants via EazyDiner PayEazy','Best dining card in India for restaurant spends','4 domestic lounge visits/qtr','2% on online spends','Complimentary EazyDiner Prime membership'],
+    intlTravel: false,
+    welcomeBonus: 2499,
+    bestFor: ['dining'],
+    categories: ['dining']
+  },
+  {
+    id: 'au_lit',
+    name: 'LIT Credit Card',
+    bank: 'AU Small Finance Bank',
+    icon: '🟣',
+    fee: 499,
+    feeWaiver: 'Waived on ₹1L annual spend',
+    minIncome: 15000,
+    network: 'Visa',
+    rewards: { travel:1, dining:2, online:2, groceries:1, fuel:1, utility:1, default:1 },
+    perks: ['India\'s first customizable credit card — pick features you want','Activate/deactivate lounge, OTT, insurance benefits as needed','2% on dining and online spends','Good entry-level card for younger users','Low fee with flexible feature control'],
+    intlTravel: false,
+    welcomeBonus: 0,
+    bestFor: ['low_fee','cashback'],
+    categories: ['online','dining']
+  },
+  {
+    id: 'idfc_select',
+    name: 'First Select',
+    bank: 'IDFC First Bank',
+    icon: '🟢',
+    fee: 0,
+    feeWaiver: 'Lifetime free',
+    minIncome: 12000,
+    network: 'Visa',
+    rewards: { travel:1.5, dining:1.5, online:1.5, groceries:1.5, fuel:0, utility:1.5, default:0.5 },
+    perks: ['Lifetime free — no annual fee ever','3pts/₹150 on spends up to ₹20k/month = ~0.5% base','10pts/₹150 on spends above ₹20k/month = ~1.66%','Points never expire','4 domestic lounge + railway lounge visits/qtr (requires ₹20k prev-month spend)'],
+    intlTravel: false,
+    welcomeBonus: 500,
+    bestFor: ['low_fee'],
+    categories: ['online','dining']
+  },
+  {
+    id: 'sbi_aurum',
+    name: 'Aurum',
+    bank: 'SBI Card',
+    icon: '🔵',
+    fee: 9999,
+    feeWaiver: 'Annual fee offset by ₹3k quarterly voucher benefit',
+    minIncome: 175000,
+    network: 'Mastercard',
+    rewards: { travel:2, dining:2, online:2, groceries:2, fuel:0, utility:2, default:2 },
+    perks: ['₹3,000 quarterly benefits (OTT subscriptions + vouchers) = ₹12k/yr value','Unlimited domestic + 8 intl lounge visits/yr','2% effective reward rate on all eligible spends','Taj Epicure + Club ITC membership','Golf privileges + concierge'],
+    intlTravel: true,
+    welcomeBonus: 9999,
+    bestFor: ['travel_perks','rewards_points'],
+    categories: ['travel','dining']
+  },
+  {
+    id: 'axis_magnus_burgundy',
+    name: 'Magnus for Burgundy',
+    bank: 'Axis Bank',
+    icon: '💳',
+    fee: 0,
+    feeWaiver: 'Free for Axis Burgundy account holders (₹10L AMB required)',
+    minIncome: 300000,
+    network: 'Visa',
+    rewards: { travel:9, dining:3, online:3, groceries:3, fuel:0, utility:0, default:3 },
+    perks: ['Free card with Axis Burgundy account (₹10L average monthly balance)','12 EDGE pts/₹200 base = 3% on eligible spends up to ₹1.5L/month','35 EDGE pts/₹200 on incremental spends above ₹1.5L/month','60 EDGE pts/₹200 on TravelEDGE portal — among highest travel return cards','Transfer to 20+ partners; top card for HNI travel optimizers'],
+    intlTravel: true,
+    welcomeBonus: 0,
+    bestFor: ['travel_perks','rewards_points'],
+    categories: ['travel','online']
+  }
+];
+const CATEGORY_ICONS = {
+  travel:'✈️', dining:'🍽️', online:'🛒', groceries:'🧺', fuel:'⛽', utility:'💡', default:'💳'
+};
+
+// ═══════════════════════════════════════
+// API CONFIG + ANALYTICS
+// ═══════════════════════════════════════
+const API_BASE = 'http://localhost:3000/api/v1';
+
+function track(event, page, properties = {}) {
+  fetch(`${API_BASE}/track`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    credentials: 'include',
+    body: JSON.stringify({ event, page, properties })
+  }).catch(() => {}); // fire-and-forget — never blocks UI
+}
+
+// ═══════════════════════════════════════
+// CARD SEARCH / FILTER
+// ═══════════════════════════════════════
+function filterChips(query) {
+  const chips = document.querySelectorAll('#cardChips .chip'); // was .card-chip (bug fix)
+  const q = query.toLowerCase().trim();
+  let visible = 0;
+  chips.forEach(chip => {
+    const name = (chip.dataset.name || '').toLowerCase();
+    const tags = (chip.dataset.tags || '').toLowerCase();
+    const match = !q || name.includes(q) || tags.includes(q);
+    chip.style.display = match ? '' : 'none';
+    if(match) visible++;
+  });
+  const countEl = document.getElementById('chipCount');
+  const noRes = document.getElementById('noResults');
+  if(countEl) countEl.textContent = q ? `${visible} found` : '';
+  if(noRes) noRes.style.display = (visible === 0 && q) ? 'block' : 'none';
+}
+
+function updateSelectedSummary() {
+  const summary = document.getElementById('selectedSummary');
+  if(!summary) return;
+  if(selectedCards.length === 0) { summary.style.display='none'; return; }
+  summary.style.display = 'block';
+  summary.textContent = `✓ Selected: ${selectedCards.join(', ')}`;
+}
+
+// ═══════════════════════════════════════
+// CARD CHIPS
+// ═══════════════════════════════════════
+let selectedCards = [];
+function toggleChip(el, name) {
+  el.classList.toggle('selected');
+  if(el.classList.contains('selected')) selectedCards.push(name);
+  else selectedCards = selectedCards.filter(c => c !== name);
+  updateSelectedSummary();
+}
+
+// Display name → DB slug mapping (used when sending to /optimize API)
+const NAME_TO_SLUG = {
+  'HDFC Regalia': 'hdfc_regalia',
+  'HDFC Millennia': 'hdfc_millennia',
+  'HDFC Infinia Metal': 'hdfc_infinia',
+  'HDFC Tata Neu Infinity': 'hdfc_tata_neu',
+  'HDFC Diners Black': 'hdfc_diners_black',
+  'HDFC Swiggy': 'hdfc_swiggy',
+  'Axis Atlas': 'axis_atlas',
+  'Axis Ace': 'axis_ace',
+  'Axis Magnus': 'axis_magnus',
+  'Axis Flipkart': 'axis_flipkart',
+  'Axis Magnus Burgundy': 'axis_magnus_burgundy',
+  'Axis My Zone': 'axis_myzone',
+  'Axis Privilege': 'axis_privilege',
+  'SBI SimplyCLICK': 'sbi_simplyclick',
+  'SBI Elite': 'sbi_elite',
+  'SBI Cashback': 'sbi_cashback',
+  'SBI Aurum': 'sbi_aurum',
+  'AMEX Gold': 'amex_gold',
+  'AMEX Platinum Travel': 'amex_plat_travel',
+  'ICICI Amazon Pay': 'icici_amazon',
+  'ICICI Sapphire': 'icici_sapphire',
+  'ICICI Emeralde': 'icici_emeralde',
+  'Kotak 811': 'kotak_811',
+  'Kotak League': 'kotak_league',
+  'HSBC Live+': 'hsbc_live_plus',
+  'HSBC Cashback': 'hsbc_cashback',
+  'IDFC First Wealth': 'idfc_wealth',
+  'IDFC First Select': 'idfc_select',
+  'SC Ultimate': 'sc_ultimate',
+  'RBL World Safari': 'rbl_world_safari',
+  'RBL World Prime SuperCard': 'rbl_world_prime',
+  'RBL World Plus SuperCard': 'rbl_world_plus',
+  'YES First Exclusive': 'yes_first_exclusive',
+  'Scapia Federal': 'scapia_federal',
+  'IndusInd EazyDiner': 'indusind_eazydiner',
+  'AU LIT': 'au_lit',
+};
+
+// ═══════════════════════════════════════
+// OPTIMIZER — calls POST /api/v1/optimize
+// ═══════════════════════════════════════
+async function runOptimizer() {
+  if(selectedCards.length === 0) {
+    alert('Please select at least one card you currently hold.');
+    return;
+  }
+
+  const cardSlugs = selectedCards.map(n => NAME_TO_SLUG[n]).filter(Boolean);
+  if(cardSlugs.length === 0) {
+    alert('Could not map selected cards to database IDs. Please refresh and try again.');
+    return;
+  }
+
+  const monthlySpend = {
+    groceries: parseFloat(document.getElementById('s_grocery').value) || 0,
+    dining:    parseFloat(document.getElementById('s_dining').value)  || 0,
+    travel:    parseFloat(document.getElementById('s_travel').value)  || 0,
+    online:    parseFloat(document.getElementById('s_online').value)  || 0,
+    fuel:      parseFloat(document.getElementById('s_fuel').value)    || 0,
+    utility:   parseFloat(document.getElementById('s_utility').value) || 0,
+  };
+
+  if(Object.values(monthlySpend).every(v => v === 0)) {
+    alert('Please enter at least one spending category.');
+    return;
+  }
+
+  document.getElementById('opt-loading').classList.add('show');
+  document.getElementById('opt-results').style.display = 'none';
+
+  try {
+    const res = await fetch(`${API_BASE}/optimize`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
+      body: JSON.stringify({ selectedCards: cardSlugs, monthlySpend })
+    });
+    const json = await res.json();
+    if(!json.success) throw new Error(json.error || 'Optimization failed');
+
+    const data = json.data;
+    document.getElementById('opt-savings').textContent =
+      '₹' + Math.max(data.optimizationDelta, 0).toLocaleString('en-IN');
+
+    const catLabels = { groceries:'Groceries', dining:'Dining', travel:'Travel', online:'Online Shopping', fuel:'Fuel', utility:'Utilities' };
+    let gridHTML = '';
+    for(const [cat, opt] of Object.entries(data.bestPerCategory)) {
+      gridHTML += `
+        <div class="opt-item">
+          <div class="opt-cat">${CATEGORY_ICONS[cat] || '💳'} ${catLabels[cat] || cat}</div>
+          <div class="opt-name">${opt.card.name}</div>
+          <div class="opt-rate">${opt.rate}% rewards rate</div>
+          <div class="opt-diff">₹${opt.annualReward.toLocaleString('en-IN')}/yr</div>
+        </div>`;
+    }
+    document.getElementById('opt-grid').innerHTML = gridHTML;
+    document.getElementById('opt-tips').innerHTML = data.tips.map(t => `• ${t}<br>`).join('');
+    document.getElementById('opt-results').style.display = 'block';
+
+    track('optimizer_run', '/optimizer');
+  } catch(err) {
+    alert('Could not reach the API. Make sure the server is running at ' + API_BASE);
+    console.error(err);
+  } finally {
+    document.getElementById('opt-loading').classList.remove('show');
+  }
+}
+
+// ═══════════════════════════════════════
+// CARD FINDER — calls POST /api/v1/recommend
+// ═══════════════════════════════════════
+async function runFinder() {
+  const income             = parseFloat(document.getElementById('f_income').value)   || 0;
+  const totalSpend         = parseFloat(document.getElementById('f_spend').value)    || 0;
+  const primaryCategory    = document.getElementById('f_category').value;
+  const lifestylePreference = document.getElementById('f_lifestyle').value;
+  const maxFee             = parseFloat(document.getElementById('f_fee').value)      || 0;
+  const intlTravel         = document.getElementById('f_intl').value;
+
+  if(!income || !totalSpend || !primaryCategory || !lifestylePreference) {
+    alert('Please fill in all fields to get a personalised recommendation.');
+    return;
+  }
+
+  document.getElementById('find-loading').classList.add('show');
+  document.getElementById('find-results').style.display = 'none';
+
+  try {
+    const res = await fetch(`${API_BASE}/recommend`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
+      body: JSON.stringify({ income, totalSpend, primaryCategory, lifestylePreference, maxFee, intlTravel, limit: 5 })
+    });
+    const json = await res.json();
+    if(!json.success) throw new Error(json.error || 'Recommendation failed');
+
+    const { recommendations, totalMatched } = json.data;
+
+    if(recommendations.length === 0) {
+      document.getElementById('find-cards').innerHTML =
+        '<p style="color:var(--muted);">No cards match your criteria. Try increasing your fee limit or adjusting other filters.</p>';
+      document.getElementById('find-results').style.display = 'block';
+      return;
+    }
+
+    document.getElementById('find-sub').textContent = totalMatched + ' cards matched your profile';
+
+    let html = '';
+    recommendations.forEach((item, i) => {
+      const c = item.card;
+      const isTop = i === 0;
+      html += `
+        <div class="result-card ${isTop ? 'top-pick' : ''}">
+          ${isTop ? '<div class="top-badge">Best Match</div>' : ''}
+          <div class="rc-head">
+            <div class="rc-icon" style="font-size:13px;font-weight:700;">${c.bank.slice(0,2).toUpperCase()}</div>
+            <div>
+              <div class="rc-name">${c.name}</div>
+              <div class="rc-bank">${c.bank} · ${c.network}</div>
+            </div>
+          </div>
+          <div class="rc-value-row">
+            <div>
+              <div class="rc-value-label">Estimated net annual value</div>
+              <div class="rc-value-sub">Rewards earned − annual fee + welcome bonus</div>
+            </div>
+            <div class="rc-value-num">₹${item.netAnnualValue.toLocaleString('en-IN')}</div>
+          </div>
+          <div class="rc-tags">
+            <span class="rc-tag hi">${item.primaryRate}% on primary category</span>
+            ${item.highlights.slice(0,3).map(h => `<span class="rc-tag">${h}</span>`).join('')}
+          </div>
+          <div class="rc-fee">Annual fee: <strong>₹${c.annualFee.toLocaleString('en-IN')}</strong>${c.feeWaiverRules ? ' · ' + c.feeWaiverRules : ''}</div>
+        </div>`;
+    });
+    document.getElementById('find-cards').innerHTML = html;
+    document.getElementById('find-results').style.display = 'block';
+
+    track('recommendation_request', '/finder');
+  } catch(err) {
+    alert('Could not reach the API. Make sure the server is running at ' + API_BASE);
+    console.error(err);
+  } finally {
+    document.getElementById('find-loading').classList.remove('show');
+  }
+}
+
+// ═══════════════════════════════════════
+// CHAT ASSISTANT — Claude AI via backend
+// ═══════════════════════════════════════
+const chatState = { conversationId: null, initialized: false };
+
+async function initChat() {
+  if(chatState.initialized) return;
+  chatState.initialized = true;
+  document.getElementById('chatMessages').innerHTML = '';
+  document.getElementById('quickReplies').innerHTML = '';
+
+  addBotMsg("Hey! I'm your SwipeSmart assistant, powered by AI.\n\nTell me about yourself — your income, what you spend on, and what matters most to you. I'll find the best credit cards for you.\n\n*Example: \"I earn ₹80k/month, spend ₹25k mostly on dining and travel, and want lounge access.\"*");
+
+  try {
+    const res = await fetch(`${API_BASE}/chat/conversations`, {
+      method: 'POST',
+      credentials: 'include'
+    });
+    const json = await res.json();
+    if(json.success) chatState.conversationId = json.data.conversationId;
+  } catch(err) {
+    addBotMsg("Could not connect to the AI backend. Make sure the API server is running.");
+  }
+}
+
+function addBotMsg(text) {
+  const msgs = document.getElementById('chatMessages');
+  const md = text
+    .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+    .replace(/\*(.*?)\*/g, '<em>$1</em>')
+    .replace(/\n/g, '<br>');
+  msgs.innerHTML += `<div class="msg bot"><div class="msg-av">SS</div><div class="msg-bub">${md}</div></div>`;
+  msgs.scrollTop = msgs.scrollHeight;
+}
+
+function addUserMsg(text) {
+  const msgs = document.getElementById('chatMessages');
+  const safe = text.replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  msgs.innerHTML += `<div class="msg user"><div class="msg-av">You</div><div class="msg-bub">${safe}</div></div>`;
+  msgs.scrollTop = msgs.scrollHeight;
+}
+
+async function sendChat() {
+  const inp = document.getElementById('chatInput');
+  const val = inp.value.trim();
+  if(!val) return;
+  addUserMsg(val);
+  inp.value = '';
+
+  if(!chatState.conversationId) {
+    addBotMsg("Not connected to backend. Please click the refresh button and try again.");
+    return;
+  }
+
+  const typingId = 'typing-' + Date.now();
+  const msgs = document.getElementById('chatMessages');
+  msgs.innerHTML += `<div id="${typingId}" class="msg bot"><div class="msg-av">SS</div><div class="msg-bub" style="color:var(--muted)">Thinking...</div></div>`;
+  msgs.scrollTop = msgs.scrollHeight;
+
+  try {
+    const res = await fetch(`${API_BASE}/chat/conversations/${chatState.conversationId}/messages`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
+      body: JSON.stringify({ message: val })
+    });
+    const json = await res.json();
+    document.getElementById(typingId)?.remove();
+
+    if(json.success) {
+      addBotMsg(json.data.message);
+    } else {
+      addBotMsg("Sorry, something went wrong. Please try again.");
+    }
+    track('chat_message', '/chat');
+  } catch(err) {
+    document.getElementById(typingId)?.remove();
+    addBotMsg("Could not reach the API. Is the server running?");
+  }
+}
+
+function injectPrompt(text) {
+  const inp = document.getElementById('chatInput');
+  if(inp) { inp.value = text; inp.focus(); }
+}
+
+async function resetChat() {
+  if(chatState.conversationId) {
+    fetch(`${API_BASE}/chat/conversations/${chatState.conversationId}`, {
+      method: 'DELETE',
+      credentials: 'include'
+    }).catch(() => {});
+  }
+  chatState.conversationId = null;
+  chatState.initialized = false;
+  initChat();
+}
+
+// ═══════════════════════════════════════
+// PAGE NAVIGATION
+// ═══════════════════════════════════════
+function showPage(id, el) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-link').forEach(t => t.classList.remove('active'));
+  document.getElementById('page-'+id).classList.add('active');
+  if(el) el.classList.add('active');
+  else {
+    const idx = {home:0, optimizer:1, finder:2, chat:3}[id];
+    document.querySelectorAll('.nav-link')[idx]?.classList.add('active');
+  }
+  if(id === 'chat' && !chatState.initialized) initChat();
+  window.scrollTo(0, 0);
+  track('page_view', '/'+id);
+}
+
+// ═══════════════════════════════════════
+// CURSOR GLOW
+// ═══════════════════════════════════════
+document.addEventListener('mousemove', (e) => {
+  const g = document.getElementById('cursorGlow');
+  if(g) { g.style.left = e.clientX + 'px'; g.style.top = e.clientY + 'px'; }
+});
+
+// ═══════════════════════════════════════
+// TICKER
+// ═══════════════════════════════════════
+window.addEventListener('DOMContentLoaded', () => {
+  const names = CARDS.map(c => c.bank + ' ' + c.name);
+  const tickerEl = document.getElementById('ticker'); // renamed to avoid shadowing track()
+  if(tickerEl) {
+    const doubled = [...names, ...names];
+    tickerEl.innerHTML = doubled.map(n => `<div class="ticker-card">${n}</div>`).join('');
+  }
+});
+</script>
+</body>
+</html>
