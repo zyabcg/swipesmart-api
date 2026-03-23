@@ -261,12 +261,7 @@ async function sendWebhook(report: ChangeReport): Promise<void> {
     await axios.post(
       WEBHOOK_URL,
       {
-        card: report.card,
-        slug: report.slug,
-        timestamp: report.timestamp,
-        oldData: report.oldData,
-        newData: report.newData,
-        diff: report.diff,
+        content: `🚨 **Card Change Detected!**\n**Card:** ${report.card}\n**Timestamp:** ${report.timestamp}\n\n**Diff:**\n\`\`\`json\n${JSON.stringify(report.diff, null, 2)}\n\`\`\``
       },
       { timeout: 10_000, headers: { 'Content-Type': 'application/json' } }
     );
