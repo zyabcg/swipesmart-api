@@ -209,6 +209,37 @@ function extractPerks(text: string): string[] {
   return [...found].slice(0, 25);
 }
 
+async function extractCardDataWithAI(text: string, cardName: string): Promise<{ rewards: string[], fees: string[], perks: string[] } | null> {
+  if (!process.env.GEMINI_API_KEY) return null;
+  
+  try {
+    const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+    const model = genAI.getGenerativeModel({
+      model: "gemini-2.5-flash",
+      generationConfig: { responseMimeType: "application/json" }
+    });
+
+    const prompt = `You are an expert credit card analyst. Extract the most important details from the official ${cardName} credit card webpage text.
+Extract into 3 arrays (Rewards, Fees, Perks). Ensure the points are complete, human-readable sentences, not fragmented strings (e.g., "100% cashback on flights" rather than just "100%"). Limit to the 10 most crucial points per array. Keep strings clean.
+
+Respond with ONLY valid JSON matching this exact schema:
+{
+  "rewards": ["..."],
+  "fees": ["..."],
+  "perks": ["..."]
+}
+
+TEXT:
+${text.slice(0, 15000)}`;
+
+    const result = await model.generateContent(prompt);
+    return JSON.parse(result.response.text());
+  } catch (err) {
+    console.warn(`  [gemini] Extraction failed for ${cardName}, falling back to regex.`, err);
+    return null;
+  }
+}
+
 // ─── Snapshot I/O ─────────────────────────────────────────────────────────────
 
 function snapshotPath(slug: string): string {
@@ -321,14 +352,30 @@ async function scrapeCard(source: CardSource): Promise<ChangeReport | null> {
   }
 
   const text = extractText(html);
+  
+  let rewards: string[] = [];
+  let fees: string[] = [];
+  let perks: string[] = [];
+
+  const aiData = await extractCardDataWithAI(text, source.name);
+  if (aiData) {
+    rewards = aiData.rewards || [];
+    fees = aiData.fees || [];
+    perks = aiData.perks || [];
+  } else {
+    // Fallback to naive regex
+    rewards = extractRewardRates(text);
+    fees = extractFees(text);
+    perks = extractPerks(text);
+  }
 
   const snapshot: CardSnapshot = {
     slug: source.slug,
     name: source.name,
     scrapedAt: new Date().toISOString(),
-    rewards: extractRewardRates(text),
-    fees: extractFees(text),
-    perks: extractPerks(text),
+    rewards,
+    fees,
+    perks,
     rawSample: text.slice(0, 2000),
   };
 
@@ -434,8 +481,9 @@ async function main(): Promise<void> {
       console.error(`  [${source.slug}] Unexpected error — ${msg}`);
     }
 
-    // Polite delay between requests (1.5s) to avoid rate limiting
-    await new Promise((res) => setTimeout(res, 1500));
+    // Respect Gemini rate limits (15 RPM free tier = 1 req every 4 seconds max)
+    const delay = process.env.GEMINI_API_KEY ? 4000 : 1500;
+    await new Promise((res) => setTimeout(res, delay));
   }
 
   // ── Final summary ──────────────────────────────────────────────────────────
