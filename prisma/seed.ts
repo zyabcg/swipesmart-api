@@ -43,7 +43,7 @@ const CARDS = [
     perks: [
       '5% cashback on Amazon/Flipkart/Zomato/Swiggy/Uber & 7 more brands (cap ₹1k/mo)',
       '1.5% on all other eligible spends',
-      '₹1k gift voucher on ₹1L quarterly spend',
+      '₹1k gift voucher OR Lounge Access voucher on ₹1L quarterly spend',
       '1% fuel surcharge waiver',
     ],
     bestFor: ['cashback', 'online'],
